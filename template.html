@@ -1,0 +1,941 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#05070f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="夜空ビューア">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>古代文献の再現も出来る夜空ビューア</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #05070f; color: #dfe6f5; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  #wrap { max-width: 860px; margin: 0 auto; padding: 10px; }
+  h1 { font-size: 16px; font-weight: 600; margin: 2px 0 8px; letter-spacing: .05em; }
+  #sky { width: 100%; aspect-ratio: 1 / 1; max-height: 66vh; display: block; background: #04060d; border: 1px solid #26304d; border-radius: 10px; touch-action: none; cursor: grab; }
+  #sky:active { cursor: grabbing; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+  .row label { font-size: 12px; color: #9fb0d0; }
+  input, select, button { background: #101830; color: #e8eeff; border: 1px solid #33436e; border-radius: 6px; padding: 6px 8px; font-size: 13px; }
+  button { cursor: pointer; }
+  button:hover { background: #1a2650; }
+  input[type="number"] { width: 76px; }
+  #yr { width: 92px; }
+  input[type="range"] { width: 130px; padding: 0; }
+  .chk { display: flex; gap: 4px; align-items: center; font-size: 12px; color: #9fb0d0; }
+  #readout { font-size: 12.5px; color: #b9c8ea; margin-top: 8px; line-height: 1.7; white-space: pre-line; }
+  #note { font-size: 11px; color: #6d7ea3; margin-top: 4px; line-height: 1.7; }
+  #note { display: none; }
+  #note.open { display: block; }
+  #bHelp { float: right; font-size: 12px; padding: 4px 10px; }
+  #bHelp { float: none; }
+  .modeBtns button { font-size: 12px; padding: 4px 10px; }
+  .modeBtns button.on { background: #2a3f7d; border-color: #5b7bd6; }
+  /* スマホ版（標準）：1画面に収まる縦レイアウト */
+  #wrap.m-mobile { height: 100dvh; display: flex; flex-direction: column; padding: 6px; max-width: 520px; }
+  #wrap.m-mobile h1 { font-size: 13px; margin: 0 0 4px; }
+  #wrap.m-mobile #sky { flex: 1 1 auto; min-height: 130px; height: auto; aspect-ratio: auto; max-height: none; }
+  #wrap.m-mobile .row { flex: 0 0 auto; margin-top: 5px; gap: 4px; }
+  #wrap.m-mobile .row label { font-size: 11px; }
+  #wrap.m-mobile input, #wrap.m-mobile select, #wrap.m-mobile button { padding: 4px 6px; font-size: 12px; }
+  #wrap.m-mobile input[type="number"] { width: 60px; }
+  #wrap.m-mobile #yr { width: 74px; }
+  #wrap.m-mobile input[type="range"] { width: 100px; }
+  #wrap.m-mobile #readout { flex: 0 0 auto; font-size: 11.5px; margin-top: 5px; line-height: 1.55; }
+  #wrap.m-mobile #note { font-size: 10px; line-height: 1.55; }
+  /* スマホ版の星空全画面：操作部を全部隠し、空だけにする。右下の「戻る」で復帰 */
+  #bFull { display: none; }
+  #wrap.m-mobile #bFull { display: inline-block; }
+  #bBack { display: none; position: fixed; right: 12px; bottom: 12px; z-index: 20; padding: 10px 18px; font-size: 14px; background: rgba(16,24,48,0.85); }
+  #wrap.m-full { height: 100dvh; max-width: none; padding: 0; display: block; }
+  #wrap.m-full > *:not(#sky):not(#bBack) { display: none !important; }
+  #wrap.m-full #sky { width: 100%; height: 100dvh; border: none; border-radius: 0; }
+  #wrap.m-full #bBack { display: block; }
+  /* PC版 HD */
+  #wrap.m-hd { max-width: 1500px; }
+  #wrap.m-hd #sky { aspect-ratio: 16 / 10; max-height: 68vh; }
+  /* PC版 4K */
+  #wrap.m-4k { max-width: 2300px; }
+  #wrap.m-4k h1 { font-size: 22px; }
+  #wrap.m-4k input, #wrap.m-4k select, #wrap.m-4k button { font-size: 16px; padding: 9px 12px; }
+  #wrap.m-4k .row label, #wrap.m-4k .chk { font-size: 14px; }
+  #wrap.m-4k #readout { font-size: 15px; }
+  #wrap.m-4k #sky { max-height: 72vh; }
+</style>
+<div id="wrap" class="m-mobile">
+  <h1>古代文献の再現も出来る夜空ビューア<span class="modeBtns" style="float:right"><button id="bModePC">PC版</button><button id="bModeMobile" style="display:none">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bHelp">ヘルプ</button></span></h1>
+  <canvas id="sky"></canvas>
+  <button id="bBack">戻る</button>
+  <div class="row">
+    <label>日時</label>
+    <select id="era"><option value="ad">西暦</option><option value="bc">紀元前</option></select>
+    <input type="number" id="yr" min="1" step="1"><label>年</label>
+    <input type="number" id="mo" min="1" max="12" step="1"><label>月</label>
+    <input type="number" id="dy" min="1" max="31" step="1"><label>日</label>
+    <input type="number" id="hh" min="0" max="23" step="1"><label>時</label>
+    <input type="number" id="mi" min="0" max="59" step="1"><label>分</label>
+  </div>
+  <div class="row">
+    <button id="bNow">今</button>
+    <button id="bYday">昨日</button>
+    <button id="bM1h">−1時間</button>
+    <button id="bP1h">＋1時間</button>
+    <button id="bM10">−10分</button>
+    <button id="bP10">＋10分</button>
+    <button id="bPlay">▶ 10分刻みで進める</button>
+  </div>
+  <div class="row">
+    <label>緯度</label><input type="number" id="lat" step="0.1" min="-89" max="89">
+    <label>経度</label><input type="number" id="lon" step="0.1" min="-180" max="180">
+    <select id="citysel"><option value="">エリア…</option></select>
+    <select id="citysel2"><option value="">場所…</option></select>
+    <span id="cityname" style="color:#ffd166;font-size:13px"></span>
+  </div>
+  <div class="row">
+    <label>周辺</label><span id="nearby" style="font-size:12.5px;color:#9fb0d0">―</span>
+  </div>
+  <div class="row">
+    <label>ハレー彗星</label>
+    <select id="halleySel"><option value="">（日付に連動：近日点の前後で自動表示）</option></select>
+  </div>
+  <div class="row">
+    <label>主要な彗星</label>
+    <select id="cometSel"><option value="">選択すると、その彗星の近日点の10日前へ移動します</option></select>
+  </div>
+  <div class="row">
+    <label>視野</label><input type="range" id="fov" min="25" max="120" step="1">
+    <span id="fovVal" style="font-size:12px;color:#9fb0d0"></span>
+    <label class="chk"><input type="checkbox" id="cLines" checked> 星座線</label>
+    <label class="chk"><input type="checkbox" id="cMW" checked> 天の川</label>
+    <label class="chk">星の等級 <input type="range" id="magSel" min="1" max="6" step="0.5" value="6" style="width:110px;vertical-align:middle"> <span id="magVal">〜6等</span></label>
+    <label class="chk"><input type="checkbox" id="cNames" checked> 星の名前</label>
+    <label class="chk"><input type="checkbox" id="cPlanets" checked> 惑星・月・太陽</label>
+    <button id="bZenith">天頂を見る</button>
+    <button id="bFull">星空を全画面</button>
+  </div>
+  <div id="readout"></div>
+  <div id="note">空の部分をドラッグすると、見上げる方角（方位・高度）が動きます。ホイール／視野スライダで拡大・縮小。スマホ版では、空をタップしても全画面になります（戻るは右下のボタン）。時刻は日本時間（UTC+9）として入力します。暦は1582年10月15日以降がグレゴリオ暦、それ以前はユリウス暦で表示します（古代の文献の日付は、まずこの暦に直してから入れてください）。星は約5.6等まで約3,200個（Yale Bright Star 系データ）、歳差を補正しているので古代でも配置が合います。惑星・月・太陽は Schlyter の簡易計算法（誤差1〜2分角、時代が離れると数分角〜）。ハレー彗星は出現ごとの近日点日（Catalog of Cometary Orbits / Yeomans）＋軌道要素を837年・1986年・2061年の公表値の間で内挿したもので、古代ほど誤差が大きく（数度まで）なります。古代は地球の自転の遅れ（ΔT）で数時間ずれる事があるので、文献の「日没時」「夜明け前」等の記述に合わせて時刻を前後させて合わせ込んでください。都市リストの遺跡・古代都市の位置は概略で、出典と照合済みの物以外には（仮）を付けています。「主要な彗星」は83個で、軌道要素はJPL SBDBの公表値、明るさは同データベースの絶対等級フィット（無い歴史的彗星は記録からの概算）です。周期彗星は収録した回帰の前後でのみ正しく、古代の彗星ほど位置の誤差が大きくなります。</div>
+</div>
+<script>
+/*SKYDATA*/
+/*MWDATA*/
+/*COMETS*/
+const $ = id => document.getElementById(id);
+const cv = $('sky'), ctx = cv.getContext('2d');
+const D2R = Math.PI/180, R2D = 180/Math.PI;
+const rev = a => ((a % 360) + 360) % 360;
+const sind = a => Math.sin(a*D2R), cosd = a => Math.cos(a*D2R);
+const state = {
+  jd: Date.now()/86400000 + 2440587.5,
+  lat: 35.0, lon: 135.8,   // 京都
+  az: 180, alt: 45, fov: 62, comet: null
+};
+let stars = [], lines = [], names = {};
+function loadData(){ stars = SKYDATA.stars; lines = SKYDATA.lines; names = SKYDATA.names; }
+
+// ---------- 暦 <-> ユリウス日（1582年を境にユリウス暦/グレゴリオ暦） ----------
+function calToJD(y, m, d){ // その日の 0時 (UT) の JD
+  let yy = y, mm = m;
+  if (mm <= 2){ yy -= 1; mm += 12; }
+  const greg = (y > 1582) || (y === 1582 && (m > 10 || (m === 10 && d >= 15)));
+  const B = greg ? 2 - Math.floor(yy/100) + Math.floor(Math.floor(yy/100)/4) : 0;
+  return Math.floor(365.25*(yy + 4716)) + Math.floor(30.6001*(mm + 1)) + d + B - 1524.5;
+}
+function jdToCal(jd){ // [天文年, 月, 日(小数)]
+  const Z = Math.floor(jd + 0.5), F = (jd + 0.5) - Z;
+  let A = Z;
+  if (Z >= 2299161){ const al = Math.floor((Z - 1867216.25)/36524.25); A = Z + 1 + al - Math.floor(al/4); }
+  const B = A + 1524, C = Math.floor((B - 122.1)/365.25), D = Math.floor(365.25*C), E = Math.floor((B - D)/30.6001);
+  const day = B - D - Math.floor(30.6001*E) + F;
+  const month = E < 14 ? E - 1 : E - 13;
+  const year = month > 2 ? C - 4716 : C - 4715;
+  return [year, month, day];
+}
+// 入力欄（日本時間） <-> JD
+function fieldsToJD(){
+  let y = parseInt($('yr').value, 10);
+  if (!isFinite(y) || y < 1) return null;
+  if ($('era').value === 'bc') y = 1 - y;
+  const mo = Math.min(12, Math.max(1, parseInt($('mo').value, 10) || 1));
+  const dy = Math.min(31, Math.max(1, parseInt($('dy').value, 10) || 1));
+  const hh = Math.min(23, Math.max(0, parseInt($('hh').value, 10) || 0));
+  const mi = Math.min(59, Math.max(0, parseInt($('mi').value, 10) || 0));
+  return calToJD(y, mo, dy) + (hh - 9 + mi/60)/24;
+}
+let syncing = false;
+function jdToFields(){
+  syncing = true;
+  const [y, mo, dayF] = jdToCal(state.jd + 9/24);
+  const di = Math.floor(dayF);
+  let hh = Math.floor((dayF - di)*24), mi = Math.round(((dayF - di)*24 - hh)*60);
+  if (mi === 60){ mi = 0; hh += 1; }
+  if (y > 0){ $('era').value = 'ad'; $('yr').value = y; }
+  else { $('era').value = 'bc'; $('yr').value = 1 - y; }
+  $('mo').value = mo; $('dy').value = di; $('hh').value = hh; $('mi').value = mi;
+  syncing = false;
+}
+
+// ---------- 天文計算 ----------
+function gmst(jd){
+  const T = (jd - 2451545.0)/36525;
+  return rev(280.46061837 + 360.98564736629*(jd - 2451545) + 0.000387933*T*T - T*T*T/38710000);
+}
+function precessMatrix(jd){ // J2000 -> その日、Meeus の式
+  const T = (jd - 2451545.0)/36525;
+  const as = D2R/3600;
+  const zeta = (2306.2181*T + 0.30188*T*T + 0.017998*T*T*T) * as;
+  const z    = (2306.2181*T + 1.09468*T*T + 0.018203*T*T*T) * as;
+  const th   = (2004.3109*T - 0.42665*T*T - 0.041833*T*T*T) * as;
+  const cz = Math.cos(zeta), sz = Math.sin(zeta);
+  const cZ = Math.cos(z), sZ = Math.sin(z);
+  const ct = Math.cos(th), st = Math.sin(th);
+  return [
+    [cz*ct*cZ - sz*sZ, -sz*ct*cZ - cz*sZ, -st*cZ],
+    [cz*ct*sZ + sz*cZ, -sz*ct*sZ + cz*cZ, -st*sZ],
+    [cz*st, -sz*st, ct]
+  ];
+}
+function applyPrec(P, ra, dec){
+  const r = ra*D2R, d = dec*D2R;
+  const x = Math.cos(d)*Math.cos(r), y = Math.cos(d)*Math.sin(r), z = Math.sin(d);
+  const X = P[0][0]*x + P[0][1]*y + P[0][2]*z;
+  const Y = P[1][0]*x + P[1][1]*y + P[1][2]*z;
+  const Z = P[2][0]*x + P[2][1]*y + P[2][2]*z;
+  return [rev(Math.atan2(Y, X)*R2D), Math.asin(Math.max(-1, Math.min(1, Z)))*R2D];
+}
+function altaz(ra, dec, lst, lat){
+  let ha = (lst - ra) * D2R; if (ha > Math.PI) ha -= 2*Math.PI;
+  const d = dec*D2R, p = lat*D2R;
+  const alt = Math.asin(Math.sin(d)*Math.sin(p) + Math.cos(d)*Math.cos(p)*Math.cos(ha));
+  const az = Math.atan2(Math.sin(ha), Math.cos(ha)*Math.sin(p) - Math.tan(d)*Math.cos(p));
+  return [rev(az*R2D + 180), alt*R2D];
+}
+function project(az, alt){
+  const a0 = state.az*D2R, h0 = state.alt*D2R, a = az*D2R, h = alt*D2R;
+  const cosc = Math.sin(h0)*Math.sin(h) + Math.cos(h0)*Math.cos(h)*Math.cos(a-a0);
+  if (cosc < -0.2) return null;
+  const den = 1 + cosc;
+  const X = 2*Math.cos(h)*Math.sin(a-a0)/den;
+  const Y = 2*(Math.cos(h0)*Math.sin(h) - Math.sin(h0)*Math.cos(h)*Math.cos(a-a0))/den;
+  const s = (cv.height/2) / (2*Math.tan(state.fov*D2R/4));
+  return [cv.width/2 + s*X, cv.height/2 - s*Y];
+}
+function bvColor(bv){
+  if (bv < 0) return '#bcd2ff'; if (bv < 0.35) return '#e8eeff'; if (bv < 0.7) return '#fff3d6';
+  if (bv < 1.1) return '#ffd9a0'; return '#ffb27a';
+}
+
+// ---------- Schlyter の方法：太陽・月・惑星（その日の分点） ----------
+function keplerE(Mdeg, e){
+  const M = rev(Mdeg)*D2R;
+  let E = M + e * Math.sin(M) * (1 + e * Math.cos(M));
+  for (let k = 0; k < 12; k++){
+    const E1 = E - (E - e*Math.sin(E) - M) / (1 - e*Math.cos(E));
+    if (Math.abs(E1 - E) < 1e-7){ E = E1; break; }
+    E = E1;
+  }
+  return E;
+}
+function bodyElements(d){
+  return {
+    sun:     { N:0, i:0, w:282.9404 + 4.70935E-5*d, a:1.000000, e:0.016709 - 1.151E-9*d, M:356.0470 + 0.9856002585*d },
+    moon:    { N:125.1228 - 0.0529538083*d, i:5.1454, w:318.0634 + 0.1643573223*d, a:60.2666, e:0.054900, M:115.3654 + 13.0649929509*d },
+    mercury: { N:48.3313 + 3.24587E-5*d, i:7.0047 + 5.00E-8*d, w:29.1241 + 1.01444E-5*d, a:0.387098, e:0.205635 + 5.59E-10*d, M:168.6562 + 4.0923344368*d },
+    venus:   { N:76.6799 + 2.46590E-5*d, i:3.3946 + 2.75E-8*d, w:54.8910 + 1.38374E-5*d, a:0.723330, e:0.006773 - 1.302E-9*d, M:48.0052 + 1.6021302244*d },
+    mars:    { N:49.5574 + 2.11081E-5*d, i:1.8497 - 1.78E-8*d, w:286.5016 + 2.92961E-5*d, a:1.523688, e:0.093405 + 2.516E-9*d, M:18.6021 + 0.5240207766*d },
+    jupiter: { N:100.4542 + 2.76854E-5*d, i:1.3030 - 1.557E-7*d, w:273.8777 + 1.64505E-5*d, a:5.20256, e:0.048498 + 4.469E-9*d, M:19.8950 + 0.0830853001*d },
+    saturn:  { N:113.6634 + 2.38980E-5*d, i:2.4886 - 1.081E-7*d, w:339.3939 + 2.97661E-5*d, a:9.55475, e:0.055546 - 9.499E-9*d, M:316.9670 + 0.0334442282*d }
+  };
+}
+function helioRect(el){
+  const E = keplerE(el.M, el.e);
+  const xv = el.a * (Math.cos(E) - el.e);
+  const yv = el.a * (Math.sqrt(1 - el.e*el.e) * Math.sin(E));
+  const v = Math.atan2(yv, xv)*R2D, r = Math.hypot(xv, yv);
+  const u = (v + el.w)*D2R, Nd = el.N*D2R, id = el.i*D2R;
+  return {
+    x: r * (Math.cos(Nd)*Math.cos(u) - Math.sin(Nd)*Math.sin(u)*Math.cos(id)),
+    y: r * (Math.sin(Nd)*Math.cos(u) + Math.cos(Nd)*Math.sin(u)*Math.cos(id)),
+    z: r * (Math.sin(u)*Math.sin(id)),
+    r, v
+  };
+}
+function sunPos(d){
+  const el = bodyElements(d).sun;
+  const E = keplerE(el.M, el.e);
+  const xv = Math.cos(E) - el.e;
+  const yv = Math.sqrt(1 - el.e*el.e) * Math.sin(E);
+  const v = Math.atan2(yv, xv)*R2D;
+  const r = Math.hypot(xv, yv);
+  const lon = rev(v + el.w);
+  return { lon, r, xs: r*cosd(lon), ys: r*sind(lon), M: el.M, w: el.w };
+}
+function eclToRaDec(x, y, z, ecl){
+  const ye = y*cosd(ecl) - z*sind(ecl);
+  const ze = y*sind(ecl) + z*cosd(ecl);
+  return [rev(Math.atan2(ye, x)*R2D), Math.atan2(ze, Math.hypot(x, ye))*R2D, Math.hypot(x, y, z)];
+}
+function planetRaDec(key, d, sun, els){
+  const ecl = 23.4393 - 3.563E-7 * d;
+  if (key === 'sun'){
+    const [ra, dec] = eclToRaDec(sun.xs, sun.ys, 0, ecl);
+    return { ra, dec, dist: sun.r };
+  }
+  if (key === 'moon'){
+    const el = els.moon;
+    let h = helioRect(el);
+    let lon = rev(Math.atan2(h.y, h.x)*R2D), latE = Math.atan2(h.z, Math.hypot(h.x, h.y))*R2D, r = h.r;
+    // 月の摂動（Schlyter 第9節）
+    const Ms = els.sun.M, Mm = el.M, Nm = el.N;
+    const Ls = Ms + els.sun.w, Lm = Mm + el.w + Nm;
+    const D = Lm - Ls, F = Lm - Nm;
+    lon += -1.274*sind(Mm - 2*D) + 0.658*sind(2*D) - 0.186*sind(Ms) - 0.059*sind(2*Mm - 2*D)
+           - 0.057*sind(Mm - 2*D + Ms) + 0.053*sind(Mm + 2*D) + 0.046*sind(2*D - Ms)
+           + 0.041*sind(Mm - Ms) - 0.035*sind(D) - 0.031*sind(Mm + Ms) - 0.015*sind(2*F - 2*D)
+           + 0.011*sind(Mm - 4*D);
+    latE += -0.173*sind(F - 2*D) - 0.055*sind(Mm - F - 2*D) - 0.046*sind(Mm + F - 2*D)
+            + 0.033*sind(F + 2*D) + 0.017*sind(2*Mm + F);
+    r += -0.58*Math.cos((Mm - 2*D)*D2R) - 0.46*Math.cos(2*D*D2R);
+    const x = r*cosd(lon)*cosd(latE), y = r*sind(lon)*cosd(latE), z = r*sind(latE);
+    const [ra, dec] = eclToRaDec(x, y, z, ecl);
+    return { ra, dec, dist: r, lon, sunLon: sun.lon };
+  }
+  const el = els[key];
+  const h = helioRect(el);
+  let lon = rev(Math.atan2(h.y, h.x)*R2D), latE = Math.atan2(h.z, Math.hypot(h.x, h.y))*R2D, r = h.r;
+  const Mj = els.jupiter.M, Ms = els.saturn.M;
+  if (key === 'jupiter'){
+    lon += -0.332*sind(2*Mj - 5*Ms - 67.6) - 0.056*sind(2*Mj - 2*Ms + 21) + 0.042*sind(3*Mj - 5*Ms + 21)
+           - 0.036*sind(Mj - 2*Ms) + 0.022*cosd(Mj - Ms) + 0.023*sind(2*Mj - 3*Ms + 52) - 0.016*sind(Mj - 5*Ms - 69);
+  }
+  if (key === 'saturn'){
+    lon += 0.812*sind(2*Mj - 5*Ms - 67.6) - 0.229*cosd(2*Mj - 4*Ms - 2) + 0.119*sind(Mj - 2*Ms - 3)
+           + 0.046*sind(2*Mj - 6*Ms - 69) + 0.014*sind(Mj - 3*Ms + 32);
+    latE += -0.020*cosd(2*Mj - 4*Ms - 2) + 0.018*sind(2*Mj - 6*Ms - 49);
+  }
+  const xh = r*cosd(lon)*cosd(latE), yh = r*sind(lon)*cosd(latE), zh = r*sind(latE);
+  const [ra, dec, dist] = eclToRaDec(xh + sun.xs, yh + sun.ys, zh, ecl);
+  return { ra, dec, dist };
+}
+
+// ---------- ハレー彗星 ----------
+// 近日点日：[天文年, 月, 日]（Catalog of Cometary Orbits 1996 / Yeomans）
+const HALLEY_TP = [
+  [-239,5,25],[-163,11,12],[-86,8,6],[-11,10,10],[66,1,25],[141,3,22],[218,5,17],[295,4,20],
+  [374,2,16],[451,6,28],[530,9,27],[607,3,15],[684,10,2],[760,5,20],[837,2,28],[912,7,18],
+  [989,9,5],[1066,3,20],[1145,4,18],[1222,9,28],[1301,10,25],[1378,11,10],[1456,6,9],[1531,8,26],
+  [1607,10,27],[1682,9,15],[1759,3,13],[1835,11,16],[1910,4,20],[1986,2,9],[2061,7,28]
+];
+// 軌道要素のアンカー（J2000黄道座標系）：837年=SAO彗星カタログ、1986年・2061年=JPL
+const HALLEY_ANCH = [
+  [837,  { q:0.58239, e:0.96786, i:163.439, Om:44.949,  w:100.113 }],
+  [1986, { q:0.58598, e:0.96714, i:162.263, Om:58.420,  w:111.332 }],
+  [2061, { q:0.59278, e:0.96658, i:161.960, Om:59.396,  w:112.050 }]
+];
+function halleyElements(year){
+  const A = HALLEY_ANCH;
+  let a, b, t;
+  if (year <= A[0][0]){ a = A[0][1]; b = A[1][1]; t = (year - A[0][0])/(A[1][0] - A[0][0]); 
+    const o = {}; for (const k in a) o[k] = a[k] + (b[k] - a[k])*t; return o; }
+  if (year >= A[2][0]) return { ...A[2][1] };
+  const seg = year < A[1][0] ? 0 : 1;
+  a = A[seg][1]; b = A[seg + 1][1]; t = (year - A[seg][0])/(A[seg + 1][0] - A[seg][0]);
+  const o = {}; for (const k in a) o[k] = a[k] + (b[k] - a[k])*t; return o;
+}
+function keplerHighE(Mrad, e){
+  let M = Mrad % (2*Math.PI); if (M > Math.PI) M -= 2*Math.PI; if (M < -Math.PI) M += 2*Math.PI;
+  let E = Math.PI;
+  for (let k = 0; k < 60; k++){
+    const dE = (E - e*Math.sin(E) - M) / (1 - e*Math.cos(E));
+    E -= dE; if (Math.abs(dE) < 1e-10) return E;
+  }
+  // 二分法フォールバック
+  let lo = -Math.PI, hi = Math.PI;
+  for (let k = 0; k < 200; k++){
+    const mid = (lo + hi)/2;
+    if (mid - e*Math.sin(mid) - M > 0) hi = mid; else lo = mid;
+  }
+  return (lo + hi)/2;
+}
+function halleyPos(jd, sun){
+  let best = null, bestAbs = 1e9, tpJd = 0;
+  for (const [y, m, dd] of HALLEY_TP){
+    const t = calToJD(y, m, dd) + 0.5;
+    if (Math.abs(jd - t) < bestAbs){ bestAbs = Math.abs(jd - t); best = [y, m, dd]; tpJd = t; }
+  }
+  if (!best || bestAbs > 420) return null;
+  const el = halleyElements(best[0]);
+  const a = el.q / (1 - el.e);
+  const n = 0.9856076686 / Math.pow(a, 1.5); // 度/日
+  const M = n * (jd - tpJd) * D2R;
+  const E = keplerHighE(M, el.e);
+  const xv = a * (Math.cos(E) - el.e), yv = a * (Math.sqrt(1 - el.e*el.e) * Math.sin(E));
+  const v = Math.atan2(yv, xv), r = Math.hypot(xv, yv);
+  const u = v + el.w*D2R, Om = el.Om*D2R, ii = el.i*D2R;
+  // 日心・黄道 J2000
+  let x = r * (Math.cos(Om)*Math.cos(u) - Math.sin(Om)*Math.sin(u)*Math.cos(ii));
+  let y = r * (Math.sin(Om)*Math.cos(u) + Math.cos(Om)*Math.sin(u)*Math.cos(ii));
+  let z = r * (Math.sin(u)*Math.sin(ii));
+  // 歳差分だけ黄道経度を回して「その日」の座標系へ
+  const T = (jd - 2451545.0)/36525;
+  const psi = (4612.4362*T + 1.39656*T*T + 0.0362*T*T*T) * D2R/3600;
+  const cp = Math.cos(psi), sp = Math.sin(psi);
+  const x2 = x*cp - y*sp, y2 = x*sp + y*cp;
+  x = x2; y = y2;
+  // 地心 = 彗星の日心座標 + 太陽の地心座標
+  const gx = x + sun.xs, gy = y + sun.ys, gz = z;
+  const d = jd - 2451543.5;
+  const ecl = 23.4393 - 3.563E-7 * d;
+  const [ra, dec, dist] = eclToRaDec(gx, gy, gz, ecl);
+  const mag = 4.5 + 5*Math.log10(Math.max(dist, 0.01)) + 10*Math.log10(Math.max(r, 0.05));
+  // 尾の先端：日心方向に 0.25 AU 伸ばした点
+  const tl = 0.25 / Math.max(r, 0.05);
+  const tx = gx + x*tl, ty = gy + y*tl, tz = gz + z*tl;
+  const [tra, tdec] = eclToRaDec(tx, ty, tz, ecl);
+  return { ra, dec, dist, r, mag, year: best[0], tailRa: tra, tailDec: tdec };
+}
+
+// ---------- 主要彗星（JPL SBDB の軌道要素。楕円／放物線／双曲線に対応） ----------
+function cometPos(c, jd, sun){
+  const dt = jd - c[2];
+  if (Math.abs(dt) > 1500) return null;
+  const q = c[3], e = c[4];
+  let v, r;
+  const K = 0.01720209895; // ガウス重力定数
+  if (e < 0.999){
+    const a = q / (1 - e);
+    const M = K / Math.pow(a, 1.5) * dt;
+    const E = keplerHighE(M, e);
+    const xv = a * (Math.cos(E) - e), yv = a * Math.sqrt(1 - e*e) * Math.sin(E);
+    v = Math.atan2(yv, xv); r = Math.hypot(xv, yv);
+  } else if (e <= 1.001){
+    const B = 2 * K / Math.pow(2 * q, 1.5) * dt;
+    let s = Math.cbrt(3 * B);
+    for (let k = 0; k < 50; k++){ const ds = (s + s*s*s/3 - B) / (1 + s*s); s -= ds; if (Math.abs(ds) < 1e-12) break; }
+    v = 2 * Math.atan(s); r = q * (1 + s*s);
+  } else {
+    const a = q / (e - 1);
+    const M = K / Math.pow(a, 1.5) * dt;
+    let F = Math.asinh(M / e);
+    for (let k = 0; k < 60; k++){ const dF = (e*Math.sinh(F) - F - M) / (e*Math.cosh(F) - 1); F -= dF; if (Math.abs(dF) < 1e-12) break; }
+    v = 2 * Math.atan(Math.sqrt((e + 1)/(e - 1)) * Math.tanh(F/2));
+    r = a * (e * Math.cosh(F) - 1);
+  }
+  const u = v + c[5]*D2R, Om = c[6]*D2R, ii = c[7]*D2R;
+  let x = r * (Math.cos(Om)*Math.cos(u) - Math.sin(Om)*Math.sin(u)*Math.cos(ii));
+  let y = r * (Math.sin(Om)*Math.cos(u) + Math.cos(Om)*Math.sin(u)*Math.cos(ii));
+  let z = r * (Math.sin(u)*Math.sin(ii));
+  const T = (jd - 2451545.0)/36525;
+  const psi = (4612.4362*T + 1.39656*T*T + 0.0362*T*T*T) * D2R/3600;
+  const cp = Math.cos(psi), sp = Math.sin(psi);
+  const x2 = x*cp - y*sp, y2 = x*sp + y*cp;
+  x = x2; y = y2;
+  const gx = x + sun.xs, gy = y + sun.ys, gz = z;
+  const d = jd - 2451543.5;
+  const ecl = 23.4393 - 3.563E-7 * d;
+  const [ra, dec, dist] = eclToRaDec(gx, gy, gz, ecl);
+  const mag = c[8] + 5*Math.log10(Math.max(dist, 0.005)) + c[9]*Math.log10(Math.max(r, 0.02));
+  const tl = 0.3 / Math.max(r, 0.05);
+  const tx = gx + x*tl, ty = gy + y*tl, tz = gz + z*tl;
+  const [tra, tdec] = eclToRaDec(tx, ty, tz, ecl);
+  return { ra, dec, dist, r, mag, tailRa: tra, tailDec: tdec };
+}
+
+// ---------- 主要都市（2段リスト：エリア＞場所。文献の残る地域＝中東・中国・インド・欧州は基点ごとに細分）
+const GROUPS = [
+ ['日本', [['京都市',35.0,135.8],['奈良市',34.7,135.8],['大阪市',34.7,135.5],['東京',35.7,139.7],['鎌倉市',35.3,139.6],['福岡市',33.6,130.4],['長崎市',32.8,129.9],['札幌市',43.1,141.3],['那覇市',26.2,127.7]]],
+ ['東アジア', [['韓国・ソウル',37.6,127.0],['台湾・台北市',25.0,121.6],['モンゴル・ウランバートル',47.9,106.9]]],
+ ['中国・長安（西安）周辺', [['西安市（長安）',34.3,108.9],['咸陽市',34.3,108.7],['宝鶏市',34.4,107.2]]],
+ ['中国・洛陽周辺', [['洛陽市',34.6,112.5],['登封・観星台',34.4,113.1],['鄭州市',34.7,113.6],['開封市',34.8,114.3],['安陽市（殷墟）',36.1,114.3]]],
+ ['中国・北京周辺', [['北京市',39.9,116.4],['天津市',39.1,117.2]]],
+ ['中国・南京周辺', [['南京市',32.1,118.8],['揚州市',32.4,119.4],['蘇州市',31.3,120.6],['杭州市',30.3,120.2],['紹興市',30.0,120.6]]],
+ ['中国・その他', [['上海市',31.2,121.5],['長沙市（馬王堆）',28.2,112.9],['武漢市',30.6,114.3],['成都市',30.7,104.1],['広州市',23.1,113.3],['敦煌',40.1,94.7],['トルファン',42.9,89.2],['カシュガル',39.5,76.0],['ラサ',29.7,91.1]]],
+ ['インド・デリー周辺', [['デリー',28.6,77.2],['アーグラ',27.2,78.0],['マトゥラー',27.6,77.7],['ジャイプル（天文台）',26.9,75.8],['ウッジャイン',23.2,75.8]]],
+ ['インド・その他', [['ムンバイ',19.1,72.9],['バラナシ',25.3,82.9],['パトナ（パータリプトラ）',25.6,85.1],['ナーランダー遺跡',25.1,85.4],['コルカタ',22.6,88.4],['チェンナイ',13.1,80.3],['ベンガルール',13.0,77.6],['パキスタン・カラチ',24.9,67.0]]],
+ ['東南アジア', [['タイ・バンコク',13.8,100.5],['ベトナム・ハノイ',21.0,105.9],['フィリピン・マニラ',14.6,121.0],['シンガポール',1.4,104.0],['インドネシア・ジャカルタ',-6.2,106.8]]],
+ ['中東・バグダッド周辺', [['イラク・バグダッド',33.3,44.4],['バビロン遺跡',32.5,44.4],['クテシフォン遺跡',33.1,44.6],['ニップル遺跡',32.1,45.2],['ウルク遺跡',31.3,45.6],['ウル遺跡',31.0,46.1],['ニネヴェ遺跡（モスル）',36.3,43.4],['アッシュール遺跡',35.5,43.3]]],
+ ['中東・ダマスカス周辺', [['シリア・ダマスカス',33.5,36.3],['シリア・アレッポ',36.2,37.1],['パルミラ遺跡',34.6,38.3],['レバノン・ビブロス',34.1,35.7],['レバノン・シドン',33.6,35.4],['レバノン・ティルス',33.3,35.2]]],
+ ['中東・エルサレム周辺', [['エルサレム',31.8,35.2],['ベツレヘム',31.7,35.2],['エリコ',31.9,35.5],['ペトラ遺跡',30.3,35.4]]],
+ ['中東・カイロ周辺', [['エジプト・カイロ',30.0,31.2],['エジプト・ギザ',30.0,31.1],['メンフィス遺跡',29.8,31.3],['エジプト・アレクサンドリア',31.2,29.9],['ルクソール（テーベ）',25.7,32.6]]],
+ ['中東・イスタンブール周辺', [['トルコ・イスタンブール',41.0,28.9],['トルコ・アンカラ',39.9,32.9],['トロイ遺跡',40.0,26.2],['エフェソス遺跡',37.9,27.3],['ペルガモン遺跡',39.1,27.2],['ハットゥシャ遺跡',40.0,34.6]]],
+ ['中東・テヘラン周辺', [['イラン・テヘラン',35.7,51.4],['イラン・イスファハン',32.7,51.7],['ペルセポリス遺跡',29.9,52.9],['スーサ遺跡',32.2,48.3],['ハマダン（エクバタナ）',34.8,48.5]]],
+ ['中東・アラビア', [['サウジアラビア・リヤド',24.6,46.7],['メッカ',21.4,39.8],['メディナ',24.5,39.6],['イエメン・サヌア',15.4,44.2]]],
+ ['欧州・ローマ周辺', [['イタリア・ローマ市',41.9,12.5],['イタリア・ナポリ',40.8,14.3],['ポンペイ遺跡',40.8,14.5],['イタリア・フィレンツェ',43.8,11.3],['イタリア・ピサ',43.7,10.4]]],
+ ['欧州・ギリシャ周辺', [['ギリシャ・アテネ',38.0,23.7],['デルフィ遺跡',38.5,22.5],['コリントス遺跡',37.9,22.9],['ミケーネ遺跡',37.7,22.8],['スパルタ',37.1,22.4],['オリンピア遺跡',37.6,21.6],['クノッソス遺跡',35.3,25.2]]],
+ ['欧州・パリ周辺', [['フランス・パリ',48.9,2.4],['フランス・シャルトル',48.4,1.5],['フランス・ルーアン',49.4,1.1]]],
+ ['欧州・ロンドン周辺', [['イギリス・ロンドン',51.5,-0.1],['ストーンヘンジ',51.2,-1.8],['イギリス・オックスフォード',51.8,-1.3],['イギリス・ケンブリッジ',52.2,0.1]]],
+ ['欧州・その他', [['スペイン・マドリード',40.4,-3.7],['ポルトガル・リスボン',38.7,-9.1],['ドイツ・ベルリン',52.5,13.4],['オーストリア・ウィーン',48.2,16.4],['チェコ・プラハ',50.1,14.4],['ポーランド・ワルシャワ',52.2,21.0],['デンマーク・コペンハーゲン',55.7,12.6],['オランダ・アムステルダム',52.4,4.9],['アイルランド・ダブリン',53.3,-6.3],['スウェーデン・ストックホルム',59.3,18.1],['アイスランド・レイキャビク',64.1,-21.9],['ロシア・モスクワ',55.8,37.6],['ウクライナ・キーウ',50.5,30.5]]],
+ ['米州・アフリカ・オセアニア', [['アメリカ・ニューヨーク',40.7,-74.0],['アメリカ・ワシントン',38.9,-77.0],['アメリカ・ロサンゼルス',34.1,-118.2],['キューバ・ハバナ',23.1,-82.4],['メキシコ・メキシコシティ',19.4,-99.1],['ペルー・リマ',-12.0,-77.0],['ブラジル・サンパウロ',-23.6,-46.6],['アルゼンチン・ブエノスアイレス',-34.6,-58.4],['南アフリカ・ケープタウン',-33.9,18.4],['オーストラリア・シドニー',-33.9,151.2],['ニュージーランド・オークランド',-36.8,174.8]]],
+];
+const CITIES = GROUPS.flatMap(g => g[1]);
+const VERIFIED_SITES = ['トロイ遺跡','スーサ遺跡','登封・観星台','安陽市（殷墟）','ウル遺跡','メンフィス遺跡','エジプト・ギザ','ポンペイ遺跡'];
+const SITE_RE = /遺跡|観星台|ストーンヘンジ/;
+function siteLabel(name){ return name + (SITE_RE.test(name) && !VERIFIED_SITES.includes(name) ? '（仮）' : ''); }
+function nearestCity(lat, lon){
+  let best = null, bd = 1.2; // 約130km以内
+  for (const c of CITIES){
+    const dd = Math.hypot(lat - c[1], (lon - c[2]) * Math.cos(lat * D2R));
+    if (dd < bd){ bd = dd; best = c[0]; }
+  }
+  return best;
+}
+
+// ---------- 描画 ----------
+const PLANETS = [
+  ['mercury', '水星', '#c9b8a6', 2.4], ['venus', '金星', '#ffe9b8', 3.6],
+  ['mars', '火星', '#ff9a5c', 3.0], ['jupiter', '木星', '#f2d5a0', 4.0], ['saturn', '土星', '#e8d9a8', 3.4]
+];
+// 彗星の尾（全彗星共通のイメージ）：まっすぐ青いイオンの尾＋扇形に広がる白い塵の尾。微かに揺れる
+function drawTail(p, tp){
+  window.__cv = true;
+  const t = performance.now()/700;
+  // 強調（fina 要望 2026-11-24）：尾の見かけの長さを1.3倍に伸ばし、濃さも上げる
+  tp = [p[0] + (tp[0]-p[0])*1.3, p[1] + (tp[1]-p[1])*1.3];
+  const dx = tp[0]-p[0], dy = tp[1]-p[1];
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx/len, uy = dy/len, px = -uy, py = ux;
+  // --- 塵の尾：少し向きをずらし、扇形に広げて湾曲させる ---
+  const rot = 0.24, cr = Math.cos(rot), sr = Math.sin(rot);
+  const dux = ux*cr - uy*sr, duy = ux*sr + uy*cr;
+  const dpx = -duy, dpy = dux;
+  const dlen = len * 0.72;
+  const dend = [p[0] + dux*dlen, p[1] + duy*dlen];
+  const dsp = dlen * 0.30;
+  const dg = ctx.createLinearGradient(p[0], p[1], dend[0], dend[1]);
+  dg.addColorStop(0, 'rgba(235,228,205,0.45)'); dg.addColorStop(1, 'rgba(235,228,205,0)');
+  ctx.fillStyle = dg;
+  ctx.beginPath();
+  ctx.moveTo(p[0], p[1]);
+  ctx.quadraticCurveTo(p[0] + dux*dlen*0.55 + dpx*dsp*0.5, p[1] + duy*dlen*0.55 + dpy*dsp*0.5, dend[0] + dpx*dsp, dend[1] + dpy*dsp);
+  ctx.lineTo(dend[0] - dpx*dsp, dend[1] - dpy*dsp);
+  ctx.quadraticCurveTo(p[0] + dux*dlen*0.55 - dpx*dsp*0.5, p[1] + duy*dlen*0.55 - dpy*dsp*0.5, p[0], p[1]);
+  ctx.fill();
+  for (let k = -1; k <= 1; k++){
+    const sway = Math.sin(t*0.8 + k*1.7) * 0.03;
+    const off = k * dsp * 0.5;
+    const ex = dend[0] + dpx*off + dpx*sway*dlen, ey = dend[1] + dpy*off + dpy*sway*dlen;
+    const gg = ctx.createLinearGradient(p[0], p[1], ex, ey);
+    gg.addColorStop(0, 'rgba(240,233,210,0.32)'); gg.addColorStop(1, 'rgba(240,233,210,0)');
+    ctx.strokeStyle = gg; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(p[0], p[1]);
+    ctx.quadraticCurveTo(p[0] + dux*dlen*0.5 + dpx*off*0.5, p[1] + duy*dlen*0.5 + dpy*off*0.5, ex, ey); ctx.stroke();
+  }
+  // --- イオンの尾：細くまっすぐ、青。明滅する ---
+  const isp = len * 0.035;
+  const ig = ctx.createLinearGradient(p[0], p[1], tp[0], tp[1]);
+  ig.addColorStop(0, 'rgba(120,180,255,0.48)'); ig.addColorStop(1, 'rgba(120,180,255,0)');
+  ctx.fillStyle = ig;
+  ctx.beginPath();
+  ctx.moveTo(p[0], p[1]);
+  ctx.lineTo(tp[0] + px*isp, tp[1] + py*isp);
+  ctx.lineTo(tp[0] - px*isp, tp[1] - py*isp);
+  ctx.closePath(); ctx.fill();
+  for (let k = -1; k <= 1; k++){
+    const off = k * isp * 0.55;
+    const a = Math.max(0.26 + 0.14*Math.sin(t*2.3 + k*2.4), 0.08);
+    const gg = ctx.createLinearGradient(p[0], p[1], tp[0], tp[1]);
+    gg.addColorStop(0, 'rgba(140,195,255,' + a.toFixed(3) + ')'); gg.addColorStop(1, 'rgba(140,195,255,0)');
+    ctx.strokeStyle = gg; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(tp[0] + px*off, tp[1] + py*off); ctx.stroke();
+  }
+}
+function draw(){
+  window.__cv = false;
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W*0.75);
+  g.addColorStop(0, '#0e1938'); g.addColorStop(1, '#05070f');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const lst = rev(gmst(state.jd) + state.lon);
+  const P = precessMatrix(state.jd);
+  const hor = [];
+  for (let az = 0; az <= 360; az += 3){ const p = project(az, 0); if (p) hor.push(p); }
+  if (hor.length > 2){
+    ctx.beginPath();
+    hor.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+    ctx.strokeStyle = 'rgba(120,150,220,0.55)'; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+    ctx.fillStyle = 'rgba(6,10,20,0.55)'; ctx.fill();
+  }
+  ctx.font = '600 13px sans-serif'; ctx.textAlign = 'center';
+  [['北',0],['北東',45],['東',90],['南東',135],['南',180],['南西',225],['西',270],['北西',315]].forEach(([t, az]) => {
+    const p = project(az, 1.5); if (!p) return;
+    if (p[0] < -20 || p[0] > W + 20 || p[1] < -20 || p[1] > H + 20) return;
+    ctx.fillStyle = '#8fb0ff'; ctx.fillText(t, p[0], p[1]);
+  });
+  if ($('cMW').checked && typeof MWDATA !== 'undefined'){
+    const alphas = [0.08, 0.11, 0.14, 0.18, 0.24];
+    MWDATA.forEach((rings, li) => {
+      ctx.beginPath();
+      for (const ring of rings){
+        let pen = false;
+        for (const [ra0, dec0] of ring){
+          const [ra, dec] = applyPrec(P, ra0 < 0 ? ra0 + 360 : ra0, dec0);
+          const [az, al] = altaz(ra, dec, lst, state.lat);
+          if (al < -2){ pen = false; continue; }
+          const p = project(az, al); if (!p){ pen = false; continue; }
+          if (!pen){ ctx.moveTo(p[0], p[1]); pen = true; } else ctx.lineTo(p[0], p[1]);
+        }
+        ctx.closePath();
+      }
+      ctx.fillStyle = 'rgba(175,195,240,' + (alphas[li] || 0.05) + ')';
+      ctx.fill('evenodd');
+    });
+  }
+  if ($('cLines').checked){
+    ctx.strokeStyle = 'rgba(110,140,220,0.5)'; ctx.lineWidth = 1;
+    for (const poly of lines){
+      ctx.beginPath(); let started = false, pen = false;
+      for (const [ra0, dec0] of poly){
+        const [ra, dec] = applyPrec(P, ra0, dec0);
+        const [az, al] = altaz(ra, dec, lst, state.lat);
+        if (al < -2){ pen = false; continue; }
+        const p = project(az, al); if (!p){ pen = false; continue; }
+        if (!pen){ ctx.moveTo(p[0], p[1]); pen = true; started = true; } else ctx.lineTo(p[0], p[1]);
+      }
+      if (started) ctx.stroke();
+    }
+  }
+  for (let i = 0; i < stars.length; i++){
+    const [ra0, dec0, mag, bv] = stars[i];
+    if (mag > parseFloat($('magSel').value)) continue;
+    const [ra, dec] = applyPrec(P, ra0, dec0);
+    const [az, al] = altaz(ra, dec, lst, state.lat);
+    if (al < -1) continue;
+    const p = project(az, al); if (!p) continue;
+    if (p[0] < -10 || p[0] > W + 10 || p[1] < -10 || p[1] > H + 10) continue;
+    const dim = al < 0 ? 0.35 : (al < 8 ? 0.55 + al/8*0.45 : 1);
+    // 認識しやすさ優先：等級→大きさの対応を実物の光より誇張する（fina 要望 2026-11-24）
+    const r = Math.max(0.9, 4.2 - mag*0.62);
+    ctx.globalAlpha = dim;
+    if (mag < 1.0){
+      const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r*3.2);
+      g.addColorStop(0, 'rgba(255,255,255,0.35)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(p[0], p[1], r*3.2, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = bvColor(bv);
+    ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 7); ctx.fill();
+    if ($('cNames').checked && names[i] && mag <= 2.6){
+      ctx.globalAlpha = Math.min(1, dim + 0.15);
+      ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillStyle = '#c9d6f8';
+      ctx.fillText(names[i], p[0] + r + 3, p[1] + 3);
+    }
+  }
+  ctx.globalAlpha = 1;
+  // 惑星・月・太陽・彗星
+  const d = state.jd - 2451543.5;
+  const els = bodyElements(d);
+  const sun = sunPos(d);
+  let extra = '';
+  if ($('cPlanets').checked){
+    const drawBody = (ra, dec, color, radius, label, altFix) => {
+      let [az, al] = altaz(ra, dec, lst, state.lat);
+      if (altFix) al = altFix(al);
+      if (al < -3) return null;
+      const p = project(az, al); if (!p) return null;
+      const dim = al < 0 ? 0.4 : 1;
+      ctx.globalAlpha = dim;
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(p[0], p[1], radius, 0, 7); ctx.fill();
+      ctx.font = '600 11.5px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffe9a8';
+      ctx.fillText(label, p[0] + radius + 3, p[1] + 3);
+      ctx.globalAlpha = 1;
+      return [az, al];
+    };
+    const sp = planetRaDec('sun', d, sun, els);
+    drawBody(sp.ra, sp.dec, '#ffd94d', 5, '太陽');
+    const mp = planetRaDec('moon', d, sun, els);
+    // 月の視差（簡易：高度補正）
+    const par = Math.asin(1/Math.max(mp.dist, 20))*R2D;
+    const mpos = drawBody(mp.ra, mp.dec, '#e8e8e2', 4.6, '月', al => al - par*Math.cos(al*D2R));
+    const age = ((state.jd - 2451550.1) % 29.53059 + 29.53059) % 29.53059;
+    extra += `月齢 約${age.toFixed(1)}　`;
+    if (mpos) extra += `月：方位 ${mpos[0].toFixed(0)}°・高度 ${mpos[1].toFixed(0)}°　`;
+    for (const [key, label, color, radius] of PLANETS){
+      const pp = planetRaDec(key, d, sun, els);
+      drawBody(pp.ra, pp.dec, color, radius, label);
+    }
+  }
+  const hp = state.comet ? null : halleyPos(state.jd, sun);
+  if (hp && hp.mag < 7.2){
+    const [az, al] = altaz(hp.ra, hp.dec, lst, state.lat);
+    if (al > -2){
+      const p = project(az, al);
+      const tp = project(...(() => { const [taz, tal] = altaz(hp.tailRa, hp.tailDec, lst, state.lat); return [taz, tal]; })());
+      if (p){
+        if (tp) drawTail(p, tp);
+        const glowR = Math.max(13, Math.min(42, (7.4 - hp.mag) * 6));
+        const glow = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], glowR);
+        glow.addColorStop(0, 'rgba(175,255,218,0.95)'); glow.addColorStop(1, 'rgba(220,235,255,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(p[0], p[1], glowR, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(245,255,250,0.95)';
+        ctx.beginPath(); ctx.arc(p[0], p[1], Math.max(2.2, glowR*0.22), 0, 7); ctx.fill();
+        ctx.font = '600 11.5px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillStyle = '#cfe4ff';
+        ctx.fillText('ハレー彗星', p[0] + glowR + 2, p[1] + 3);
+        extra += `ハレー彗星（${hp.year > 0 ? '西暦' + hp.year + '年' : '紀元前' + (1 - hp.year) + '年'}の出現）：方位 ${az.toFixed(0)}°・高度 ${al.toFixed(0)}°・推定 ${hp.mag.toFixed(1)}等　`;
+      }
+    }
+  }
+  if (state.comet){
+    const cp2 = cometPos(state.comet, state.jd, sun);
+    if (cp2 && cp2.mag < 7.5){
+      const [az, al] = altaz(cp2.ra, cp2.dec, lst, state.lat);
+      if (al > -2){
+        const p = project(az, al);
+        const tp = project(...(() => { const [taz, tal] = altaz(cp2.tailRa, cp2.tailDec, lst, state.lat); return [taz, tal]; })());
+        if (p){
+          if (tp) drawTail(p, tp);
+          const glowR = Math.max(12, Math.min(60, 7 / Math.max(cp2.dist, 0.02)));
+          const glow = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], glowR);
+          glow.addColorStop(0, 'rgba(175,255,218,0.95)'); glow.addColorStop(1, 'rgba(220,235,255,0)');
+          ctx.fillStyle = glow;
+          ctx.beginPath(); ctx.arc(p[0], p[1], glowR, 0, 7); ctx.fill();
+          ctx.fillStyle = 'rgba(245,255,250,0.95)';
+          ctx.beginPath(); ctx.arc(p[0], p[1], Math.max(2.2, glowR*0.22), 0, 7); ctx.fill();
+          ctx.font = '600 11.5px sans-serif'; ctx.textAlign = 'left';
+          ctx.fillStyle = '#cfe4ff';
+          ctx.fillText(state.comet[1], p[0] + glowR + 2, p[1] + 3);
+          extra += `${state.comet[1]}：方位 ${az.toFixed(0)}°・高度 ${al.toFixed(0)}°・推定 ${cp2.mag.toFixed(1)}等・地球から ${cp2.dist.toFixed(2)} AU　`;
+        }
+      }
+    }
+  }
+  ctx.strokeStyle = 'rgba(255,210,120,0.7)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(W/2, H/2, 7, 0, 7); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(W/2 - 11, H/2); ctx.lineTo(W/2 - 4, H/2);
+  ctx.moveTo(W/2 + 4, H/2); ctx.lineTo(W/2 + 11, H/2);
+  ctx.moveTo(W/2, H/2 - 11); ctx.lineTo(W/2, H/2 - 4);
+  ctx.moveTo(W/2, H/2 + 4); ctx.lineTo(W/2, H/2 + 11); ctx.stroke();
+  const azTxt = ['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西'][Math.round(state.az/22.5) % 16];
+  const cn = nearestCity(state.lat, state.lon);
+  document.getElementById('cityname').textContent = cn ? '≒ ' + cn : '';
+  updateNearby();
+  $('readout').textContent =
+    `視線の中心：方位 ${state.az.toFixed(0)}°（${azTxt}）・高度 ${state.alt.toFixed(0)}°　／　場所：緯度 ${state.lat.toFixed(1)}・経度 ${state.lon.toFixed(1)}\n` + extra;
+}
+function resize(){
+  const r = cv.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  draw();
+}
+function centerOn(ra, dec){
+  const lst = rev(gmst(state.jd) + state.lon);
+  const [az, al] = altaz(ra, dec, lst, state.lat);
+  state.az = az;
+  state.alt = Math.max(-15, Math.min(90, al));
+}
+function setJD(jd){ state.jd = jd; jdToFields(); draw(); }
+function addDays(x){ setJD(state.jd + x); }
+['era','yr','mo','dy','hh','mi'].forEach(id => $(id).addEventListener('change', () => {
+  if (syncing) return;
+  const jd = fieldsToJD(); if (jd !== null){ state.jd = jd; draw(); }
+}));
+$('bNow').onclick = () => setJD(Date.now()/86400000 + 2440587.5);
+$('bYday').onclick = () => addDays(-1);
+$('bM1h').onclick = () => addDays(-1/24);
+$('bP1h').onclick = () => addDays(1/24);
+$('bM10').onclick = () => addDays(-10/1440);
+$('bP10').onclick = () => addDays(10/1440);
+let playTimer = null;
+$('bPlay').onclick = () => {
+  if (playTimer){ clearInterval(playTimer); playTimer = null; $('bPlay').textContent = '▶ 10分刻みで進める'; return; }
+  $('bPlay').textContent = '⏸ 止める';
+  playTimer = setInterval(() => { state.jd += 10/1440; syncDateInputs(); draw(); }, 500);
+};
+$('lat').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)){ state.lat = Math.max(-89, Math.min(89, v)); syncPlaceSelects(); draw(); } });
+$('lon').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)){ state.lon = Math.max(-180, Math.min(180, v)); syncPlaceSelects(); draw(); } });
+function fillPlaces(gi){
+  const sel2 = $('citysel2');
+  sel2.innerHTML = '<option value="">場所…</option>';
+  if (gi === '' || gi === null || gi === undefined) return;
+  GROUPS[+gi][1].forEach((c, i) => { const o = document.createElement('option'); o.value = i;
+    o.textContent = siteLabel(c[0]); sel2.appendChild(o); });
+}
+function nearestPlace(){
+  let best = null, bd = 1.2;
+  GROUPS.forEach((g, gi) => g[1].forEach((c, ci) => {
+    const dd = Math.hypot(state.lat - c[1], (state.lon - c[2]) * Math.cos(state.lat * D2R));
+    if (dd < bd){ bd = dd; best = { gi, ci, dd }; }
+  }));
+  return best;
+}
+function syncPlaceSelects(){
+  const sel = $('citysel'), sel2 = $('citysel2');
+  const b = nearestPlace();
+  if (!b){ sel.value = ''; fillPlaces(''); return; }
+  if (sel.value !== String(b.gi)){ sel.value = b.gi; fillPlaces(b.gi); }
+  if (sel2.options.length <= 1) fillPlaces(b.gi);
+  sel2.value = b.ci;
+}
+function gotoPlace(gi, ci){
+  const c = GROUPS[gi][1][ci];
+  state.lat = c[1]; state.lon = c[2];
+  $('lat').value = c[1]; $('lon').value = c[2];
+  syncPlaceSelects(); draw();
+}
+{ const sel = $('citysel'), sel2 = $('citysel2');
+  GROUPS.forEach((g, i) => { const o = document.createElement('option'); o.value = i; o.textContent = g[0]; sel.appendChild(o); });
+  sel.onchange = () => fillPlaces(sel.value);
+  sel2.onchange = () => { if (sel.value === '' || sel2.value === '') return; gotoPlace(+sel.value, +sel2.value); };
+}
+let nearbyKey = '';
+function updateNearby(){
+  const key = state.lat.toFixed(1) + ',' + state.lon.toFixed(1);
+  if (key === nearbyKey) return;
+  nearbyKey = key;
+  const list = [];
+  GROUPS.forEach((g, gi) => g[1].forEach((c, ci) => {
+    const dd = Math.hypot(state.lat - c[1], (state.lon - c[2]) * Math.cos(state.lat * D2R));
+    if (dd >= 0.05 && dd <= 2.7) list.push({ gi, ci, name: c[0], km: Math.round(dd * 111) });
+  }));
+  list.sort((a, b) => a.km - b.km);
+  const el = $('nearby');
+  el.innerHTML = '';
+  if (!list.length){ el.textContent = '登録地点なし（約300km圏内）'; return; }
+  list.slice(0, 8).forEach((it, ix) => {
+    if (ix) el.appendChild(document.createTextNode('、'));
+    const s = document.createElement('span');
+    s.textContent = siteLabel(it.name) + ' 約' + it.km + 'km';
+    s.style.cssText = 'cursor:pointer;text-decoration:underline dotted';
+    s.onclick = () => gotoPlace(it.gi, it.ci);
+    el.appendChild(s);
+  });
+}
+syncPlaceSelects();
+$('fov').addEventListener('input', e => { state.fov = +e.target.value; $('fovVal').textContent = state.fov + '°'; draw(); });
+$('cLines').onchange = draw;
+$('magSel').oninput = () => { $('magVal').textContent = '〜' + $('magSel').value + '等'; draw(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw;
+function setMode(m){
+  const w = $('wrap');
+  w.classList.remove('m-mobile', 'm-hd', 'm-4k');
+  w.classList.add(m === 'mobile' ? 'm-mobile' : m === 'hd' ? 'm-hd' : 'm-4k');
+  $('bModePC').style.display = m === 'mobile' ? '' : 'none';
+  $('bModeMobile').style.display = m === 'mobile' ? 'none' : '';
+  $('bModeHD').style.display = m === 'mobile' ? 'none' : '';
+  $('bMode4K').style.display = m === 'mobile' ? 'none' : '';
+  $('bModeHD').classList.toggle('on', m === 'hd');
+  $('bMode4K').classList.toggle('on', m === '4k');
+  resize();
+}
+$('bModePC').onclick = () => setMode('hd');
+$('bModeMobile').onclick = () => setMode('mobile');
+$('bModeHD').onclick = () => setMode('hd');
+$('bMode4K').onclick = () => setMode('4k');
+$('bHelp').onclick = () => { $('note').classList.toggle('open'); resize(); };
+$('bFull').onclick = () => { $('wrap').classList.add('m-full'); resize(); };
+$('bBack').onclick = () => { $('wrap').classList.remove('m-full'); resize(); };
+$('bZenith').onclick = () => { state.alt = 90; draw(); };
+// ハレー彗星セレクト
+{
+  const sel = $('halleySel');
+  for (const [y, m, dd] of HALLEY_TP){
+    const o = document.createElement('option');
+    o.value = [y, m, dd].join(',');
+    o.textContent = (y > 0 ? `西暦${y}年` : `紀元前${1 - y}年`) + `の出現（近日点 ${m}月${dd}日）`;
+    sel.appendChild(o);
+  }
+  sel.addEventListener('change', () => {
+    if (!sel.value) return;
+    const [y, m, dd] = sel.value.split(',').map(Number);
+    setJD(calToJD(y, m, dd) - 10 + (20 - 9)/24); // 近日点の10日前 20:00
+    const hp = halleyPos(state.jd, sunPos(state.jd - 2451543.5));
+    if (hp){ centerOn(hp.ra, hp.dec); draw(); }
+    sel.value = '';
+  });
+}
+// 主要彗星セレクト
+{
+  const sel = $('cometSel');
+  COMETS.forEach((c, idx) => {
+    const o = document.createElement('option');
+    o.value = idx; o.textContent = c[1];
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => {
+    if (sel.value === ''){ state.comet = null; draw(); return; }
+    state.comet = COMETS[Number(sel.value)];
+    setJD(Math.floor(state.comet[2] - 10) + 0.5 + (20 - 9)/24); // 近日点の10日前 20:00
+    const cp = cometPos(state.comet, state.jd, sunPos(state.jd - 2451543.5));
+    if (cp){ centerOn(cp.ra, cp.dec); draw(); }
+  });
+}
+setInterval(() => { if (window.__cv) draw(); }, 180);
+// ドラッグで視線を動かす／2本指ピンチで拡大縮小（全画面でもこの2つが操作の全て）
+let drag = null, pinch = null;
+const ptrs = new Map();
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 2){
+    const [a, b] = [...ptrs.values()];
+    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), fov: state.fov };
+    drag = null;
+  } else {
+    drag = { x: e.clientX, y: e.clientY, az: state.az, alt: state.alt, t: performance.now() };
+  }
+});
+cv.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && ptrs.size === 2){
+    const [a, b] = [...ptrs.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d > 0){
+      state.fov = Math.max(25, Math.min(120, pinch.fov * pinch.d / d));
+      $('fov').value = state.fov; $('fovVal').textContent = Math.round(state.fov) + '°';
+      draw();
+    }
+    return;
+  }
+  if (!drag) return;
+  const r = cv.getBoundingClientRect();
+  const degPerPx = state.fov / r.width;
+  state.az = rev(drag.az - (e.clientX - drag.x) * degPerPx);
+  state.alt = Math.max(2, Math.min(90, drag.alt + (e.clientY - drag.y) * degPerPx));
+  draw();
+});
+let lastFullTap = 0;
+function ptrEnd(e){
+  const isTap = drag && ptrs.size === 1 && performance.now() - drag.t < 300 &&
+      Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8;
+  if (isTap && $('wrap').classList.contains('m-full')){
+    const now = performance.now();
+    if (now - lastFullTap < 350){ $('wrap').classList.remove('m-full'); lastFullTap = 0; resize(); }
+    else lastFullTap = now;
+  } else if (isTap && $('wrap').classList.contains('m-mobile')){
+    $('wrap').classList.add('m-full'); lastFullTap = 0; resize();
+  }
+  ptrs.delete(e.pointerId);
+  if (ptrs.size < 2) pinch = null;
+  if (ptrs.size === 1){
+    const [p] = [...ptrs.values()];
+    drag = { x: p.x, y: p.y, az: state.az, alt: state.alt, t: performance.now() };
+  } else if (ptrs.size === 0) drag = null;
+}
+cv.addEventListener('pointerup', ptrEnd);
+cv.addEventListener('pointercancel', ptrEnd);
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  state.fov = Math.max(25, Math.min(120, state.fov + Math.sign(e.deltaY) * 4));
+  $('fov').value = state.fov; $('fovVal').textContent = state.fov + '°'; draw();
+}, { passive: false });
+window.addEventListener('resize', resize);
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+loadData();
+$('lat').value = state.lat; $('lon').value = state.lon;
+$('fov').value = state.fov; $('fovVal').textContent = state.fov + '°';
+jdToFields();
+resize();
+</script>
