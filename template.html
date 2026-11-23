@@ -116,14 +116,14 @@
     <span id="fovVal" style="font-size:12px;color:#9fb0d0"></span>
     <label class="chk"><input type="checkbox" id="cLines" checked> 星座線</label>
     <label class="chk"><input type="checkbox" id="cMW" checked> 天の川</label>
-    <label class="chk">星の等級 <input type="range" id="magSel" min="1" max="6" step="0.5" value="6" style="width:110px;vertical-align:middle"> <span id="magVal">〜6等</span></label>
+    <label class="chk">星の等級 <input type="range" id="magSel" min="1" max="8" step="0.5" value="8" style="width:110px;vertical-align:middle"> <span id="magVal">〜8等</span></label>
     <label class="chk"><input type="checkbox" id="cNames" checked> 星の名前</label>
     <label class="chk"><input type="checkbox" id="cPlanets" checked> 惑星・月・太陽</label>
     <button id="bZenith">天頂を見る</button>
     <button id="bFull">星空を全画面</button>
   </div>
   <div id="readout"></div>
-  <div id="note">空の部分をドラッグすると、見上げる方角（方位・高度）が動きます。ホイール／視野スライダで拡大・縮小。スマホ版では、空をタップしても全画面になります（戻るは右下のボタン）。時刻は日本時間（UTC+9）として入力します。暦は1582年10月15日以降がグレゴリオ暦、それ以前はユリウス暦で表示します（古代の文献の日付は、まずこの暦に直してから入れてください）。星は約5.6等まで約3,200個（Yale Bright Star 系データ）、歳差を補正しているので古代でも配置が合います。惑星・月・太陽は Schlyter の簡易計算法（誤差1〜2分角、時代が離れると数分角〜）。ハレー彗星は出現ごとの近日点日（Catalog of Cometary Orbits / Yeomans）＋軌道要素を837年・1986年・2061年の公表値の間で内挿したもので、古代ほど誤差が大きく（数度まで）なります。古代は地球の自転の遅れ（ΔT）で数時間ずれる事があるので、文献の「日没時」「夜明け前」等の記述に合わせて時刻を前後させて合わせ込んでください。都市リストの遺跡・古代都市の位置は概略で、出典と照合済みの物以外には（仮）を付けています。「主要な彗星」は83個で、軌道要素はJPL SBDBの公表値、明るさは同データベースの絶対等級フィット（無い歴史的彗星は記録からの概算）です。周期彗星は収録した回帰の前後でのみ正しく、古代の彗星ほど位置の誤差が大きくなります。</div>
+  <div id="note">空の部分をドラッグすると、見上げる方角（方位・高度）が動きます。ホイール／視野スライダで拡大・縮小。スマホ版では、空をタップしても全画面になります（戻るは右下のボタン）。時刻は日本時間（UTC+9）として入力します。暦は1582年10月15日以降がグレゴリオ暦、それ以前はユリウス暦で表示します（古代の文献の日付は、まずこの暦に直してから入れてください）。星は8等まで約41,000個（Hipparcos 系データ、等級スライダで表示上限を変更可能）、歳差を補正しているので古代でも配置が合います。惑星・月・太陽は Schlyter の簡易計算法（誤差1〜2分角、時代が離れると数分角〜）。ハレー彗星は出現ごとの近日点日（Catalog of Cometary Orbits / Yeomans）＋軌道要素を837年・1986年・2061年の公表値の間で内挿したもので、古代ほど誤差が大きく（数度まで）なります。古代は地球の自転の遅れ（ΔT）で数時間ずれる事があるので、文献の「日没時」「夜明け前」等の記述に合わせて時刻を前後させて合わせ込んでください。都市リストの遺跡・古代都市の位置は概略で、出典と照合済みの物以外には（仮）を付けています。「主要な彗星」は83個で、軌道要素はJPL SBDBの公表値、明るさは同データベースの絶対等級フィット（無い歴史的彗星は記録からの概算）です。周期彗星は収録した回帰の前後でのみ正しく、古代の彗星ほど位置の誤差が大きくなります。</div>
 </div>
 <script>
 /*SKYDATA*/
@@ -140,7 +140,23 @@ const state = {
   az: 180, alt: 45, fov: 62, comet: null, speed: 1.5
 };
 let stars = [], lines = [], names = {};
-function loadData(){ stars = SKYDATA.stars; lines = SKYDATA.lines; names = SKYDATA.names; }
+// 星の高速描画用（fina 要望 2026-11-24：8等・約4.1万星でも処理を落とさない）
+let starVec = null, starRad = null, starCol = null, starMag = null;
+let eqCache = { key: null, v: null }, horCache = { key: null, v: null };
+function buildStarVec(){
+  const n = stars.length;
+  starVec = new Float32Array(n*3); starRad = new Float32Array(n); starCol = new Array(n); starMag = new Float32Array(n);
+  for (let i = 0; i < n; i++){
+    const [ra0, dec0, mag, bv] = stars[i];
+    const r = ra0*D2R, d = dec0*D2R, cd = Math.cos(d);
+    starVec[i*3] = cd*Math.cos(r); starVec[i*3+1] = cd*Math.sin(r); starVec[i*3+2] = Math.sin(d);
+    starRad[i] = Math.max(0.9, 4.2 - mag*0.62);
+    starCol[i] = bvColor(bv);
+    starMag[i] = mag;
+  }
+  eqCache = { key: null, v: null }; horCache = { key: null, v: null };
+}
+function loadData(){ stars = SKYDATA.stars; lines = SKYDATA.lines; names = SKYDATA.names; buildStarVec(); }
 
 // ---------- 暦 <-> ユリウス日（1582年を境にユリウス暦/グレゴリオ暦） ----------
 function calToJD(y, m, d){ // その日の 0時 (UT) の JD
@@ -605,17 +621,53 @@ function draw(){
       if (started) ctx.stroke();
     }
   }
+  // 星：歳差と地平変換はキャッシュし、毎フレームは視野内の星だけを投影する（4.1万星対応）
+  const magLim = parseFloat($('magSel').value);
+  const jdK = Math.round(state.jd*2)/2; // 歳差は0.5日単位でキャッシュ（動きは不可視）
+  if (!eqCache.v || eqCache.key !== jdK){
+    const Pc = precessMatrix(jdK);
+    const v = new Float32Array(stars.length*3);
+    for (let i = 0; i < stars.length; i++){
+      const x = starVec[i*3], y = starVec[i*3+1], z = starVec[i*3+2];
+      v[i*3]   = Pc[0][0]*x + Pc[0][1]*y + Pc[0][2]*z;
+      v[i*3+1] = Pc[1][0]*x + Pc[1][1]*y + Pc[1][2]*z;
+      v[i*3+2] = Pc[2][0]*x + Pc[2][1]*y + Pc[2][2]*z;
+    }
+    eqCache = { key: jdK, v };
+  }
+  const hKey = (Math.round(lst*100)/100) + '|' + state.lat + '|' + jdK;
+  if (!horCache.v || horCache.key !== hKey){
+    const v = new Float32Array(stars.length*3);
+    const L = lst*D2R, cL = Math.cos(L), sL = Math.sin(L);
+    const ph = state.lat*D2R, cp = Math.cos(ph), sp = Math.sin(ph);
+    const eq = eqCache.v;
+    for (let i = 0; i < stars.length; i++){
+      const x = eq[i*3], y = eq[i*3+1], z = eq[i*3+2];
+      const t = x*cL + y*sL;
+      v[i*3]   = y*cL - x*sL;   // east
+      v[i*3+1] = cp*z - sp*t;   // north
+      v[i*3+2] = sp*z + cp*t;   // up
+    }
+    horCache = { key: hKey, v };
+  }
+  const hv = horCache.v;
+  const a0r = state.az*D2R, h0r = state.alt*D2R;
+  const vcE = Math.cos(h0r)*Math.sin(a0r), vcN = Math.cos(h0r)*Math.cos(a0r), vcU = Math.sin(h0r);
+  const sPx = (H/2) / (2*Math.tan(state.fov*D2R/4));
+  const cosLim = Math.cos(2*Math.atan((Math.hypot(W/2, H/2)/sPx)/2)) - 0.02;
+  const showNames = $('cNames').checked;
   for (let i = 0; i < stars.length; i++){
-    const [ra0, dec0, mag, bv] = stars[i];
-    if (mag > parseFloat($('magSel').value)) continue;
-    const [ra, dec] = applyPrec(P, ra0, dec0);
-    const [az, al] = altaz(ra, dec, lst, state.lat);
-    if (al < -1) continue;
+    const mag = starMag[i];
+    if (mag > magLim) continue;
+    const e = hv[i*3], nn = hv[i*3+1], uu = hv[i*3+2];
+    if (uu < -0.017) continue; // 高度 −1° 未満
+    if (e*vcE + nn*vcN + uu*vcU < cosLim) continue; // 画面の外
+    const az = rev(Math.atan2(e, nn)*R2D), al = Math.asin(Math.max(-1, Math.min(1, uu)))*R2D;
     const p = project(az, al); if (!p) continue;
     if (p[0] < -10 || p[0] > W + 10 || p[1] < -10 || p[1] > H + 10) continue;
     const dim = al < 0 ? 0.35 : (al < 8 ? 0.55 + al/8*0.45 : 1);
     // 認識しやすさ優先：等級→大きさの対応を実物の光より誇張する（fina 要望 2026-11-24）
-    const r = Math.max(0.9, 4.2 - mag*0.62);
+    const r = starRad[i];
     ctx.globalAlpha = dim;
     if (mag < 1.0){
       const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r*3.2);
@@ -624,9 +676,9 @@ function draw(){
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(p[0], p[1], r*3.2, 0, 7); ctx.fill();
     }
-    ctx.fillStyle = bvColor(bv);
+    ctx.fillStyle = starCol[i];
     ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 7); ctx.fill();
-    if ($('cNames').checked && names[i] && mag <= 2.6){
+    if (showNames && names[i] && mag <= 2.6){
       ctx.globalAlpha = Math.min(1, dim + 0.15);
       ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
       ctx.fillStyle = '#c9d6f8';
