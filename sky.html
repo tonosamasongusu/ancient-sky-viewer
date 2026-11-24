@@ -119,6 +119,10 @@
     <label>客星（超新星）</label>
     <select id="snSel"><option value="">選択すると、その超新星の極大の頃へ移動します</option></select>
   </div>
+  <div id="snBox" style="display:none;margin:2px 0 6px">
+    <div id="snMeta" style="font-size:12.5px;color:#9fb0d0"></div>
+    <div id="snInfo" style="white-space:pre-line;font-size:14px;line-height:1.5;color:#ffe9a8"></div>
+  </div>
   <div class="row">
     <label>視野</label><input type="range" id="fov" min="25" max="120" step="1">
     <span id="fovVal" style="font-size:12px;color:#9fb0d0"></span>
@@ -640,6 +644,41 @@ function snMagAt(i, jd){
   const ratio = Math.log10(1/snFlux(d)) / Math.log10(1/snFlux(span));
   return sn[6] + (6.5 - sn[6])*ratio;
 }
+// 説明文（16字×2行、fina の形 2026-11-24）
+const SNDESC = [
+ [
+  "後漢書に残る人類最古の超新星記録",
+  "赤道付近や南半球では、よく見えた"
+ ],
+ [
+  "宋書に記録されたいて座南斗の客星",
+  "極大は一・五等ほど約三か月見えた"
+ ],
+ [
+  "宋書に記録されたさそりの尾の客星",
+  "約八か月見え、極大はマイナス三等"
+ ],
+ [
+  "おおかみ座に現れた記録最光の客星",
+  "一〇〇六年、世界各地に記録が残る"
+ ],
+ [
+  "かに星雲を生んだおうし座の大客星",
+  "昼に二十三日、夜に六五三日見えた"
+ ],
+ [
+  "明月記と吾妻鏡に記録された大客星",
+  "一八五日間見えたと記録に残る客星"
+ ],
+ [
+  "ティコが観測し、新星と呼ばれた星",
+  "極大はマイナス四等、金星に匹敵す"
+ ],
+ [
+  "ケプラーが見た、へびつかいの客星",
+  "銀河系で最後の観測となった超新星"
+ ]
+];
 // 超新星の光度減衰（相対フラックス）：Ni-56 と Co-56 の崩壊の和
 function snFlux(d){ return 0.5*Math.pow(2, -d/6.1) + 0.5*Math.pow(2, -d/77.2); }
 // 月：見かけの大きさ（距離で変わる視半径）と満ち欠けを描く（fina 要望 2026-11-24）
@@ -1232,7 +1271,18 @@ $('bZenith').onclick = () => { state.alt = 90; draw(); };
   sel.addEventListener('change', () => {
     if (sel.value === '') return;
     const i = Number(sel.value), sn = SNE[i];
-    setJD(SNE_JD[i] + snRiseDays() + (20 - 9)/24); // 極大の日 20:00
+    // 超新星だけ：一番見やすい都市へ移動（極大時の赤緯に最も近い緯度の登録地点＝南中高度が最大）
+    const jdP = SNE_JD[i] + snRiseDays();
+    const [, decP] = applyPrec(precessMatrix(jdP), sn[4], sn[5]);
+    let best = null;
+    for (const g of GROUPS) for (const c of g[1]){
+      const alt = 90 - Math.abs(c[1] - decP);
+      if (!best || alt > best.alt) best = { name: c[0], lat: c[1], lon: c[2], alt };
+    }
+    state.lat = best.lat; state.lon = best.lon;
+    $('lat').value = best.lat; $('lon').value = best.lon;
+    syncPlaceSelects();
+    setJD(jdP + (20 - 9)/24); // 極大の日 20:00
     let [ra, dec] = applyPrec(precessMatrix(state.jd), sn[4], sn[5]);
     let [, al] = altaz(ra, dec, rev(gmst(state.jd) + state.lon), state.lat);
     if (al < 0){
@@ -1249,6 +1299,9 @@ $('bZenith').onclick = () => { state.alt = 90; draw(); };
       [ra, dec] = applyPrec(precessMatrix(state.jd), sn[4], sn[5]);
     }
     centerOn(ra, dec); draw();
+    $('snMeta').textContent = `観測地：${best.name}（南中高度 ${best.alt.toFixed(0)}°）`;
+    $('snInfo').textContent = SNDESC[i].join('\n');
+    $('snBox').style.display = 'block';
     sel.value = '';
   });
 }
