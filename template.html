@@ -809,7 +809,7 @@ let playTimer = null;
 function setPlay(on){
   if (on && !playTimer){
     // 250ms ごとに 5分×速度 を進める（速度1で従来と同じ速さ）。細かい刻みで滑らかに
-    playTimer = setInterval(() => { state.jd += (5 * state.speed)/1440; syncDateInputs(); draw(); }, 250);
+    playTimer = setInterval(() => { state.jd += (5 * state.speed)/1440; jdToFields(); draw(); }, 250);
   } else if (!on && playTimer){
     clearInterval(playTimer); playTimer = null;
   }
