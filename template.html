@@ -74,6 +74,9 @@
   /* PC版：表示領域を約80%に縮小して1画面に収め、UI は白背景・黒文字にする（fina 要望 2026-11-24） */
   #wrap.m-hd #sky { max-height: 54vh; }
   #wrap.m-4k #sky { max-height: 61vh; }
+  /* 縦の短い画面（HD 1080p 等）では操作部＋表示行が収まるようキャンバス上限を画面高から逆算する（fina 報告 2026-11-24：HD画面で下の表示が切れる）。縦に余裕のある画面では vh 側が効き、従来どおり */
+  #wrap.m-hd #sky { max-height: min(54vh, calc(100dvh - 430px)); }
+  #wrap.m-4k #sky { max-height: min(61vh, calc(100dvh - 430px)); }
   html:has(#wrap.m-hd), body:has(#wrap.m-hd), html:has(#wrap.m-4k), body:has(#wrap.m-4k) { background: #ffffff; }
   #wrap.m-hd, #wrap.m-4k { background: #ffffff; color: #141414; }
   #wrap.m-hd .row label, #wrap.m-4k .row label, #wrap.m-hd .chk, #wrap.m-4k .chk { color: #333333; }
