@@ -1237,8 +1237,9 @@ function draw(){
   const cn = nearestCity(state.lat, state.lon);
   document.getElementById('cityname').textContent = cn ? '≒ ' + cn : '';
   updateNearby();
+  // 月齢・天体の情報も同じ行に続け、表示行を1行に収める（fina 指示 2026-11-24：縦を1行減らす）
   $('readout').textContent =
-    `視線の中心：方位 ${state.az.toFixed(0)}°（${azTxt}）・高度 ${state.alt.toFixed(0)}°　／　場所：緯度 ${state.lat.toFixed(1)}・経度 ${state.lon.toFixed(1)}\n` + extra;
+    `視線の中心：方位 ${state.az.toFixed(0)}°（${azTxt}）・高度 ${state.alt.toFixed(0)}°　／　場所：緯度 ${state.lat.toFixed(1)}・経度 ${state.lon.toFixed(1)}　` + extra;
   updateFsInfo();
 }
 function resize(){
