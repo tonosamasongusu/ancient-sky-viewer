@@ -595,6 +595,68 @@ function drawTail(p, tp){
     ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(tp[0] + px*off, tp[1] + py*off); ctx.stroke();
   }
 }
+// 月：見かけの大きさ（距離で変わる視半径）と満ち欠けを描く（fina 要望 2026-11-24）
+function drawMoon(mp, sp, lst){
+  let [az, al] = altaz(mp.ra, mp.dec, lst, state.lat);
+  const par = Math.asin(1/Math.max(mp.dist, 20))*R2D; // 視差（簡易：高度補正、従来と同じ）
+  al = al - par*Math.cos(al*D2R);
+  if (al < -3) return null;
+  const p = project(az, al); if (!p) return null;
+  // 視半径（px）：角半径ぶんずらした点との投影距離で測るので、投影の伸縮に自動で合う
+  const angRad = Math.asin(0.2724/Math.max(mp.dist, 20)); // 月の半径 = 0.2724 地球半径
+  const p2 = project(az, al + angRad*R2D);
+  let rPx = p2 ? Math.hypot(p2[0] - p[0], p2[1] - p[1]) : 4.6;
+  rPx = Math.max(0.8, Math.min(rPx, 420));
+  // 位相：太陽と月の離角から照度を、画面上で太陽のある向きは大円に沿って少し進めた点で測る
+  const mv = [Math.cos(mp.dec*D2R)*Math.cos(mp.ra*D2R), Math.cos(mp.dec*D2R)*Math.sin(mp.ra*D2R), Math.sin(mp.dec*D2R)];
+  const sv = [Math.cos(sp.dec*D2R)*Math.cos(sp.ra*D2R), Math.cos(sp.dec*D2R)*Math.sin(sp.ra*D2R), Math.sin(sp.dec*D2R)];
+  const cosE = Math.max(-1, Math.min(1, mv[0]*sv[0] + mv[1]*sv[1] + mv[2]*sv[2]));
+  const ci = -cosE; // 位相角の余弦：+1=満月、0=半月、-1=新月
+  let dirAng = null;
+  const w = Math.acos(cosE);
+  if (w > 0.02 && Math.PI - w > 0.02){
+    // 地平座標系で測る：月の視差補正後の位置から太陽へ大円で0.6°進めた点の投影方向
+    // （赤道座標で測ると、補正済みの中心と未補正の探査点がずれて向きが狂う）
+    const [saz, sal] = altaz(sp.ra, sp.dec, lst, state.lat);
+    const mH = [Math.cos(al*D2R)*Math.sin(az*D2R), Math.cos(al*D2R)*Math.cos(az*D2R), Math.sin(al*D2R)];
+    const sH = [Math.cos(sal*D2R)*Math.sin(saz*D2R), Math.cos(sal*D2R)*Math.cos(saz*D2R), Math.sin(sal*D2R)];
+    const cosH = Math.max(-1, Math.min(1, mH[0]*sH[0] + mH[1]*sH[1] + mH[2]*sH[2]));
+    const wH = Math.acos(cosH);
+    const f = (0.6*D2R)/wH, sw2 = Math.sin(wH);
+    const s1 = Math.sin((1 - f)*wH)/sw2, s2 = Math.sin(f*wH)/sw2;
+    const vx = mH[0]*s1 + sH[0]*s2, vy = mH[1]*s1 + sH[1]*s2, vz = mH[2]*s1 + sH[2]*s2;
+    const az3 = rev(Math.atan2(vx, vy)*R2D), al3 = Math.asin(Math.max(-1, Math.min(1, vz)))*R2D;
+    const ps = project(az3, al3);
+    if (ps) dirAng = Math.atan2(ps[1] - p[1], ps[0] - p[0]);
+  }
+  ctx.save();
+  ctx.globalAlpha = al < 0 ? 0.4 : 1;
+  ctx.translate(p[0], p[1]);
+  ctx.beginPath(); ctx.arc(0, 0, rPx, 0, 7);
+  ctx.fillStyle = '#31363f'; ctx.fill(); // 暗部（地球照でほのかに見える側）
+  if (ci > -0.995){
+    if (dirAng !== null && rPx >= 1.6){
+      ctx.save();
+      ctx.beginPath(); ctx.arc(0, 0, rPx, 0, 7); ctx.clip();
+      ctx.rotate(dirAng);
+      ctx.fillStyle = '#f0eee2';
+      ctx.fillRect(0, -rPx, rPx + 0.5, 2*rPx); // 太陽側の半分
+      ctx.beginPath();
+      ctx.ellipse(0, 0, rPx*Math.abs(ci), rPx, 0, 0, 7);
+      ctx.fillStyle = ci > 0 ? '#f0eee2' : '#31363f'; // 膨らむ側は光を足し、三日月側は暗部で削る
+      ctx.fill();
+      ctx.restore();
+    } else {
+      ctx.beginPath(); ctx.arc(0, 0, rPx, 0, 7);
+      ctx.fillStyle = '#f0eee2'; ctx.fill(); // 満月
+    }
+  }
+  ctx.restore();
+  ctx.font = '600 11.5px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffe9a8';
+  ctx.fillText('月', p[0] + rPx + 3, p[1] + 3);
+  return [az, al];
+}
 function draw(){
   window.__cv = false;
   const W = cv.width, H = cv.height;
@@ -814,9 +876,7 @@ function draw(){
     const sp = planetRaDec('sun', d, sun, els);
     drawBody(sp.ra, sp.dec, '#ffd94d', 5, '太陽');
     const mp = planetRaDec('moon', d, sun, els);
-    // 月の視差（簡易：高度補正）
-    const par = Math.asin(1/Math.max(mp.dist, 20))*R2D;
-    const mpos = drawBody(mp.ra, mp.dec, '#e8e8e2', 4.6, '月', al => al - par*Math.cos(al*D2R));
+    const mpos = drawMoon(mp, sp, lst);
     const age = ((state.jd - 2451550.1) % 29.53059 + 29.53059) % 29.53059;
     extra += `月齢 約${age.toFixed(1)}　`;
     if (mpos) extra += `月：方位 ${mpos[0].toFixed(0)}°・高度 ${mpos[1].toFixed(0)}°　`;
