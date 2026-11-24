@@ -50,12 +50,15 @@
   #wrap.m-mobile #bFull { display: inline-block; }
   #bBack { display: none; position: fixed; right: 12px; bottom: 12px; z-index: 20; padding: 10px 18px; font-size: 14px; background: rgba(16,24,48,0.85); }
   #wrap.m-full { height: 100dvh; max-width: none; padding: 0; display: block; }
-  #wrap.m-full > *:not(#sky):not(#bBack):not(#fsBar) { display: none !important; }
+  #wrap.m-full > *:not(#sky):not(#bBack):not(#fsBar):not(#fsInfo) { display: none !important; }
   /* 全画面の下のバー（タイムプラスの速度調整、fina 要望 2026-11-24） */
   #fsBar { display: none; }
   #wrap.m-full #fsBar { display: flex; align-items: center; gap: 8px; position: fixed; left: 12px; bottom: 12px; z-index: 20; background: rgba(16,24,48,0.85); padding: 8px 12px; border-radius: 10px; color: #dfe8ff; font-size: 13px; }
   #fsBar input[type="range"] { width: 110px; }
   #fsBar button { padding: 6px 10px; font-size: 13px; }
+  /* 全画面でスライドバーの上に出す日時・都市名（fina 要望 2026-11-24） */
+  #fsInfo { display: none; }
+  #wrap.m-full #fsInfo { display: block; position: fixed; left: 12px; bottom: 70px; z-index: 20; background: rgba(16,24,48,0.85); padding: 6px 12px; border-radius: 10px; color: #dfe8ff; font-size: 14.5px; }
   #wrap.m-full #sky { width: 100%; height: 100dvh; border: none; border-radius: 0; }
   #wrap.m-full #bBack { display: block; }
   /* PC版 HD */
@@ -73,7 +76,8 @@
   <h1>古代文献の再現も出来る夜空ビューア<span class="modeBtns" style="float:right"><button id="bModePC">PC版</button><button id="bModeMobile" style="display:none">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bHelp">ヘルプ</button></span></h1>
   <canvas id="sky"></canvas>
   <button id="bBack">戻る</button>
-  <div id="fsBar"><button id="bFsPlay">▶</button><label>速度</label><input type="range" id="spdFs" min="1" max="4.5" step="0.5" value="1"><span id="spdFsVal">×1.0</span></div>
+  <div id="fsBar"><button id="bFsPlay">▶</button><label>速度</label><input type="range" id="spdFs" min="1" max="4.5" step="0.5" value="1"><span id="spdFsVal">×1.0</span><button id="bShot">撮影</button></div>
+  <div id="fsInfo"></div>
   <div class="row">
     <label>日時</label>
     <select id="era"><option value="ad">西暦</option><option value="bc">紀元前</option></select>
@@ -229,6 +233,16 @@ function jdToFields(){
   else { $('era').value = 'bc'; $('yr').value = 1 - y; }
   $('mo').value = mo; $('dy').value = di; $('hh').value = hh; $('mi').value = mi;
   syncing = false;
+}
+
+function infoString(){
+  const cn = (document.getElementById('cityname').textContent || '').replace(/^≒ /, '');
+  return `${$('era').value === 'bc' ? '紀元前' : ''}${$('yr').value}年${$('mo').value}月${$('dy').value}日 ${String($('hh').value).padStart(2, '0')}:${String($('mi').value).padStart(2, '0')}` + (cn ? `　${cn}` : '');
+}
+let fsInfoLast = '';
+function updateFsInfo(){
+  const s = infoString();
+  if (s !== fsInfoLast){ fsInfoLast = s; document.getElementById('fsInfo').textContent = s; }
 }
 
 // ---------- 天文計算 ----------
@@ -945,6 +959,7 @@ function draw(){
   updateNearby();
   $('readout').textContent =
     `視線の中心：方位 ${state.az.toFixed(0)}°（${azTxt}）・高度 ${state.alt.toFixed(0)}°　／　場所：緯度 ${state.lat.toFixed(1)}・経度 ${state.lon.toFixed(1)}\n` + extra;
+  updateFsInfo();
 }
 function resize(){
   const r = cv.getBoundingClientRect();
@@ -983,6 +998,37 @@ function setPlay(on){
 }
 $('bPlay').onclick = () => setPlay(!playTimer);
 $('bFsPlay').onclick = () => setPlay(!playTimer);
+$('bShot').onclick = () => {
+  const bc = $('era').value === 'bc';
+  const name = `sky-${bc ? 'BC' : ''}${$('yr').value}-${String($('mo').value).padStart(2, '0')}-${String($('dy').value).padStart(2, '0')}.png`;
+  // 別キャンバスへコピーし、右下に日時・都市名を刻印（白文字＋緑フチ）してから保存する。本体は汚さない
+  const off = document.createElement('canvas');
+  off.width = cv.width; off.height = cv.height;
+  const octx = off.getContext('2d');
+  octx.drawImage(cv, 0, 0);
+  const fs = Math.max(15, Math.round(cv.width * 0.03));
+  octx.font = `600 ${fs}px sans-serif`;
+  octx.textAlign = 'right'; octx.textBaseline = 'bottom';
+  octx.lineJoin = 'round';
+  octx.strokeStyle = '#00c853'; octx.lineWidth = Math.max(2, fs / 5);
+  const tx = cv.width - fs * 0.7, ty = cv.height - fs * 0.55;
+  octx.strokeText(infoString(), tx, ty);
+  octx.fillStyle = '#ffffff';
+  octx.fillText(infoString(), tx, ty);
+  const done = (blob) => {
+    if (!blob) return;
+    const file = new File([blob], name, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })){
+      navigator.share({ files: [file] }).catch(() => {});
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }
+  };
+  if (off.toBlob) off.toBlob(done, 'image/png');
+  else { const a = document.createElement('a'); a.href = off.toDataURL('image/png'); a.download = name; a.click(); }
+};
 function setSpeed(v){
   state.speed = v;
   $('spd').value = v; $('spdFs').value = v;
