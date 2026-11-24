@@ -622,7 +622,10 @@ function draw(){
     }
   }
   // 星：歳差と地平変換はキャッシュし、毎フレームは視野内の星だけを投影する（4.1万星対応）
-  const magLim = parseFloat($('magSel').value);
+  // スマホ版は重いので表示上限を6.9等（14,9xx星＝15,000以下）に落とす（fina 指示 2026-11-24）
+  const magLim = $('wrap').classList.contains('m-mobile')
+    ? Math.min(parseFloat($('magSel').value), 6.9)
+    : parseFloat($('magSel').value);
   const jdK = Math.round(state.jd*2)/2; // 歳差は0.5日単位でキャッシュ（動きは不可視）
   if (!eqCache.v || eqCache.key !== jdK){
     const Pc = precessMatrix(jdK);
@@ -888,7 +891,12 @@ function updateNearby(){
 syncPlaceSelects();
 $('fov').addEventListener('input', e => { state.fov = +e.target.value; $('fovVal').textContent = state.fov + '°'; draw(); });
 $('cLines').onchange = draw;
-$('magSel').oninput = () => { $('magVal').textContent = '〜' + $('magSel').value + '等'; draw(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw;
+function updateMagLabel(){
+  const v = parseFloat($('magSel').value);
+  const capped = $('wrap').classList.contains('m-mobile') && v > 6.9;
+  $('magVal').textContent = capped ? '〜6.9等（スマホ上限）' : '〜' + $('magSel').value + '等';
+}
+$('magSel').oninput = () => { updateMagLabel(); draw(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw;
 function setMode(m){
   const w = $('wrap');
   w.classList.remove('m-mobile', 'm-hd', 'm-4k');
@@ -899,6 +907,7 @@ function setMode(m){
   $('bMode4K').style.display = m === 'mobile' ? 'none' : '';
   $('bModeHD').classList.toggle('on', m === 'hd');
   $('bMode4K').classList.toggle('on', m === '4k');
+  updateMagLabel();
   resize();
 }
 $('bModePC').onclick = () => setMode('hd');
@@ -1011,5 +1020,6 @@ loadData();
 $('lat').value = state.lat; $('lon').value = state.lon;
 $('fov').value = state.fov; $('fovVal').textContent = state.fov + '°';
 jdToFields();
+updateMagLabel();
 resize();
 </script>
