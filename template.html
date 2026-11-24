@@ -50,7 +50,7 @@
   #wrap.m-mobile #bFull { display: inline-block; }
   #bBack { display: none; position: fixed; right: 12px; bottom: 12px; z-index: 20; padding: 10px 18px; font-size: 14px; background: rgba(16,24,48,0.85); }
   #wrap.m-full { height: 100dvh; max-width: none; padding: 0; display: block; }
-  #wrap.m-full > *:not(#sky):not(#bBack):not(#fsBar):not(#fsInfo) { display: none !important; }
+  #wrap.m-full > *:not(#sky):not(#gl):not(#top):not(#bBack):not(#fsBar):not(#fsInfo) { display: none !important; }
   /* 全画面の下のバー（タイムプラスの速度調整、fina 要望 2026-11-24） */
   #fsBar { display: none; }
   #wrap.m-full #fsBar { display: flex; align-items: center; gap: 8px; position: fixed; left: 12px; bottom: 12px; z-index: 20; background: rgba(16,24,48,0.85); padding: 8px 12px; border-radius: 10px; color: #dfe8ff; font-size: 13px; }
@@ -60,6 +60,10 @@
   #fsInfo { display: none; }
   #wrap.m-full #fsInfo { display: block; position: fixed; left: 12px; bottom: 70px; z-index: 20; background: rgba(16,24,48,0.85); padding: 6px 12px; border-radius: 10px; color: #dfe8ff; font-size: 14.5px; }
   #wrap.m-full #sky { width: 100%; height: 100dvh; border: none; border-radius: 0; }
+  /* タイムプラス中だけ星を GPU（WebGL）で描く重ねキャンバス（fina 指示 2026-11-24） */
+  #wrap { position: relative; }
+  #gl, #top { position: absolute; display: none; pointer-events: none; }
+  #wrap.glplay #gl, #wrap.glplay #top { display: block; }
   #wrap.m-full #bBack { display: block; }
   /* PC版 HD */
   #wrap.m-hd { max-width: 1500px; }
@@ -89,6 +93,8 @@
 <div id="wrap" class="m-mobile">
   <h1>古代文献の再現も出来る夜空ビューア<span class="modeBtns" style="float:right"><button id="bModePC">PC版</button><button id="bModeMobile" style="display:none">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bHelp">ヘルプ</button></span></h1>
   <canvas id="sky"></canvas>
+  <canvas id="gl"></canvas>
+  <canvas id="top"></canvas>
   <button id="bBack">戻る</button>
   <div id="fsBar"><button id="bFsPlay">▶</button><label>速度</label><input type="range" id="spdFs" min="1" max="4.5" step="0.5" value="1"><span id="spdFsVal">×1.0</span><button id="bShot">撮影</button></div>
   <div id="fsInfo"></div>
@@ -156,7 +162,8 @@
 /*MWDATA*/
 /*COMETS*/
 const $ = id => document.getElementById(id);
-const cv = $('sky'), ctx = cv.getContext('2d');
+const cv = $('sky'); const bctx = cv.getContext('2d'); let ctx = bctx;
+const glc = $('gl'), topc = $('top'), tctx = topc.getContext('2d');
 const D2R = Math.PI/180, R2D = 180/Math.PI;
 const rev = a => ((a % 360) + 360) % 360;
 const sind = a => Math.sin(a*D2R), cosd = a => Math.cos(a*D2R);
@@ -186,10 +193,131 @@ function buildStarVec(){
   starMagOrd = new Float32Array(n);
   for (let k = 0; k < n; k++) starMagOrd[k] = starMag[starOrder[k]];
   eqCache = { key: null, v: null }; horCache = { key: null, v: null };
+  // GPU 描画時（タイムプラス中）に CPU 側で位置を出す少数対象：星名つきの明るい星と、光輪の要る 1 等未満
+  namedIdx = []; haloIdx = [];
+  for (let i = 0; i < n; i++){
+    if (names[i] && starMag[i] <= 2.6) namedIdx.push(i);
+    if (starMag[i] < 1.0) haloIdx.push(i);
+  }
 }
 function loadData(){ stars = SKYDATA.stars; lines = SKYDATA.lines; names = SKYDATA.names; buildStarVec(); buildMWVec(); }
+
+/* ---------- タイムプラス専用の GPU 星描画（WebGL、fina 指示 2026-11-24） ----------
+   星のベクトルは GPU に常駐させ、毎フレームは回転行列（歳差×地平）と視野条件だけを渡す。
+   天の川・星座線は下の 2D 層、惑星・月・彗星・客星・ラベルは上の 2D 層に描き、星だけを GPU 層に差し替える。
+   WebGL が使えない環境では従来の 2D 描画のままになる（glOK=false）。 */
+let gl = null, glOK = false, glLoc = null;
+function glInit(){
+  if (glOK) return true;
+  if (!starVec) return false;
+  try {
+    gl = glc.getContext('webgl', { alpha: true, premultipliedAlpha: false, antialias: false, depth: false, stencil: false });
+    if (!gl) return false;
+    const vsrc = [
+      'attribute vec3 pos; attribute vec3 col; attribute float rad; attribute float mag;',
+      'uniform mat3 M; uniform vec3 vc; uniform vec3 vr; uniform vec3 vu;',
+      'uniform float cosLim; uniform float magLim; uniform float scale; uniform float W; uniform float H;',
+      'varying vec3 vcol; varying float va;',
+      'void main(){',
+      '  vec3 v = M * pos;',
+      '  float cosc = dot(v, vc);',
+      '  float al = degrees(asin(clamp(v.z, -1.0, 1.0)));',
+      '  va = al < 0.0 ? 0.35 : (al < 8.0 ? 0.55 + al / 8.0 * 0.45 : 1.0);',
+      '  vcol = col;',
+      '  if (v.z < -0.017 || cosc < cosLim || mag > magLim){ gl_Position = vec4(0.0, 0.0, 2.0, 1.0); gl_PointSize = 0.0; return; }',
+      '  float den = 1.0 + cosc;',
+      '  float px = W * 0.5 + scale * 2.0 * dot(v, vr) / den;',
+      '  float py = H * 0.5 - scale * 2.0 * dot(v, vu) / den;',
+      '  gl_Position = vec4(px / (W * 0.5) - 1.0, 1.0 - py / (H * 0.5), 0.0, 1.0);',
+      '  gl_PointSize = rad * 2.0;',
+      '}'
+    ].join('\n');
+    const fsrc = [
+      'precision mediump float;',
+      'varying vec3 vcol; varying float va;',
+      'void main(){',
+      '  vec2 q = gl_PointCoord - vec2(0.5);',
+      '  if (dot(q, q) > 0.25) discard;',
+      '  gl_FragColor = vec4(vcol, va);',
+      '}'
+    ].join('\n');
+    const sh = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error('shader compile');
+      return s;
+    };
+    const pr = gl.createProgram();
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, vsrc));
+    gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fsrc));
+    gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return false;
+    gl.useProgram(pr);
+    const n = stars.length;
+    const colArr = new Float32Array(n*3);
+    for (let i = 0; i < n; i++){
+      const hex = starCol[i];
+      colArr[i*3] = parseInt(hex.slice(1, 3), 16)/255;
+      colArr[i*3+1] = parseInt(hex.slice(3, 5), 16)/255;
+      colArr[i*3+2] = parseInt(hex.slice(5, 7), 16)/255;
+    }
+    const mk = (data, size, name) => {
+      const b = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, b);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(pr, name);
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+    };
+    mk(starVec, 3, 'pos'); mk(colArr, 3, 'col'); mk(starRad, 1, 'rad'); mk(starMag, 1, 'mag');
+    glLoc = {
+      M: gl.getUniformLocation(pr, 'M'), vc: gl.getUniformLocation(pr, 'vc'),
+      vr: gl.getUniformLocation(pr, 'vr'), vu: gl.getUniformLocation(pr, 'vu'),
+      cosLim: gl.getUniformLocation(pr, 'cosLim'), magLim: gl.getUniformLocation(pr, 'magLim'),
+      scale: gl.getUniformLocation(pr, 'scale'), W: gl.getUniformLocation(pr, 'W'), H: gl.getUniformLocation(pr, 'H')
+    };
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.disable(gl.DEPTH_TEST);
+    glOK = true;
+    return true;
+  } catch(e){ gl = null; glOK = false; return false; }
+}
+function renderGL(){
+  if (!glOK || !gl) return;
+  const W = cv.width, H = cv.height;
+  gl.viewport(0, 0, W, H);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  // 回転行列 R = 地平変換 × 歳差（従来の eqCache → horCache の合成と同一）
+  const lst = rev(gmst(state.jd) + state.lon);
+  const jdK = Math.round(state.jd*2)/2;
+  const Pc = precessMatrix(jdK);
+  const L = lst*D2R, cL = Math.cos(L), sL = Math.sin(L);
+  const ph = state.lat*D2R, cp = Math.cos(ph), sp = Math.sin(ph);
+  const Hor = [[-sL, cL, 0], [-sp*cL, -sp*sL, cp], [cp*cL, cp*sL, sp]];
+  const A = new Float32Array(9);
+  for (let c = 0; c < 3; c++) for (let r = 0; r < 3; r++)
+    A[c*3+r] = Hor[r][0]*Pc[0][c] + Hor[r][1]*Pc[1][c] + Hor[r][2]*Pc[2][c];
+  gl.uniformMatrix3fv(glLoc.M, false, A);
+  const a0 = state.az*D2R, h0 = state.alt*D2R;
+  gl.uniform3f(glLoc.vc, Math.cos(h0)*Math.sin(a0), Math.cos(h0)*Math.cos(a0), Math.sin(h0));
+  gl.uniform3f(glLoc.vr, Math.cos(a0), -Math.sin(a0), 0);
+  gl.uniform3f(glLoc.vu, -Math.sin(h0)*Math.sin(a0), -Math.sin(h0)*Math.cos(a0), Math.cos(h0));
+  const sPx = (H/2) / (2*Math.tan(state.fov*D2R/4));
+  gl.uniform1f(glLoc.scale, sPx);
+  gl.uniform1f(glLoc.W, W);
+  gl.uniform1f(glLoc.H, H);
+  gl.uniform1f(glLoc.cosLim, Math.cos(2*Math.atan((Math.hypot(W/2, H/2)/sPx)/2)) - 0.02);
+  const magLim = $('wrap').classList.contains('m-mobile')
+    ? Math.min(parseFloat($('magSel').value), 6.9)
+    : parseFloat($('magSel').value);
+  gl.uniform1f(glLoc.magLim, magLim);
+  gl.drawArrays(gl.POINTS, 0, stars.length);
+}
 // 等級順インデックス（描画ループを表示上限で打ち切るため）と、天の川のベクトル事前計算（星と同じ方式で高速化）
 let starOrder = null, starMagOrd = null;
+let namedIdx = [], haloIdx = [];
 let mwVec = null, mwLayers = null, mwEqCache = { key: null, v: null }, mwHorCache = { key: null, v: null };
 function buildMWVec(){
   if (typeof MWDATA === 'undefined') return;
@@ -757,6 +885,7 @@ function drawMoon(mp, sp, lst){
 }
 function draw(){
   window.__cv = false;
+  ctx = bctx;
   const W = cv.width, H = cv.height;
   ctx.clearRect(0, 0, W, H);
   const g = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W*0.75);
@@ -867,6 +996,41 @@ function draw(){
   const magLim = $('wrap').classList.contains('m-mobile')
     ? Math.min(parseFloat($('magSel').value), 6.9)
     : parseFloat($('magSel').value);
+  const showNames = $('cNames').checked;
+  // タイムプラス中は星を GPU（WebGL）で描く（fina 指示 2026-11-24）。天体・星名は上の 2D 層へ
+  const useGL = !!playTimer && glOK;
+  const namedStars = [];
+  if (useGL){
+    renderGL();
+    ctx = tctx;
+    ctx.clearRect(0, 0, W, H);
+    // 明るい星の光輪は対象が少数なので CPU のまま、上の層に描く
+    for (const i of haloIdx){
+      const [ra, dec] = applyPrec(P, stars[i][0], stars[i][1]);
+      const [az, al] = altaz(ra, dec, lst, state.lat);
+      if (al < -1) continue;
+      const p = project(az, al); if (!p) continue;
+      const r = starRad[i];
+      ctx.globalAlpha = al < 0 ? 0.35 : (al < 8 ? 0.55 + al/8*0.45 : 1);
+      const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r*3.2);
+      g.addColorStop(0, 'rgba(255,255,255,0.35)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(p[0], p[1], r*3.2, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    if (showNames){
+      for (const i of namedIdx){
+        const [ra, dec] = applyPrec(P, stars[i][0], stars[i][1]);
+        const [az, al] = altaz(ra, dec, lst, state.lat);
+        if (al < -1) continue;
+        const p = project(az, al); if (!p) continue;
+        if (p[0] < -10 || p[0] > W + 10 || p[1] < -10 || p[1] > H + 10) continue;
+        const dim = al < 0 ? 0.35 : (al < 8 ? 0.55 + al/8*0.45 : 1);
+        namedStars.push([names[i], p[0], p[1], starRad[i], dim]);
+      }
+    }
+  } else {
   const jdK = Math.round(state.jd*2)/2; // 歳差は0.5日単位でキャッシュ（動きは不可視）
   if (!eqCache.v || eqCache.key !== jdK){
     const Pc = precessMatrix(jdK);
@@ -899,9 +1063,7 @@ function draw(){
   const vcE = Math.cos(h0r)*Math.sin(a0r), vcN = Math.cos(h0r)*Math.cos(a0r), vcU = Math.sin(h0r);
   const sPx = (H/2) / (2*Math.tan(state.fov*D2R/4));
   const cosLim = Math.cos(2*Math.atan((Math.hypot(W/2, H/2)/sPx)/2)) - 0.02;
-  const showNames = $('cNames').checked;
   const buckets = new Map();
-  const namedStars = [];
   for (let k = 0; k < stars.length; k++){
     const mag = starMagOrd[k];
     if (mag > magLim) break; // 等級順に並んでいるので上限で打ち切れる（全数走査をやめる）
@@ -942,6 +1104,7 @@ function draw(){
     ctx.fill();
   }
   ctx.globalAlpha = 1;
+  }
   if (namedStars.length){
     ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
     ctx.fillStyle = '#c9d6f8';
@@ -1077,6 +1240,12 @@ function resize(){
   const r = cv.getBoundingClientRect();
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  // 重ねキャンバス（GPU 層・上層）を星空キャンバスと同位置・同サイズにする
+  for (const c of [glc, topc]){
+    c.width = cv.width; c.height = cv.height;
+    c.style.left = cv.offsetLeft + 'px'; c.style.top = cv.offsetTop + 'px';
+    c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
+  }
   draw();
 }
 function centerOn(ra, dec){
@@ -1100,13 +1269,16 @@ $('bP10').onclick = () => addDays(10/1440);
 let playTimer = null;
 function setPlay(on){
   if (on && !playTimer){
+    glInit(); // タイムプラス中は星を GPU で描く（使えない環境では従来描画のまま）
     // 250ms ごとに 5分×速度 を進める（速度1で従来と同じ速さ）。細かい刻みで滑らかに
     playTimer = setInterval(() => { state.jd += (5 * state.speed)/1440; jdToFields(); draw(); }, 250);
   } else if (!on && playTimer){
     clearInterval(playTimer); playTimer = null;
   }
+  $('wrap').classList.toggle('glplay', !!playTimer && glOK);
   $('bPlay').textContent = playTimer ? '⏸ 止める' : '▶ タイムプラス';
   $('bFsPlay').textContent = playTimer ? '⏸' : '▶';
+  if (!on) draw(); // 止めたら重ねキャンバスが隠れるので、通常描画で描き直す
 }
 $('bPlay').onclick = () => setPlay(!playTimer);
 $('bFsPlay').onclick = () => setPlay(!playTimer);
@@ -1118,6 +1290,7 @@ $('bShot').onclick = () => {
   off.width = cv.width; off.height = cv.height;
   const octx = off.getContext('2d');
   octx.drawImage(cv, 0, 0);
+  if (playTimer && glOK){ renderGL(); octx.drawImage(glc, 0, 0); octx.drawImage(topc, 0, 0); }
   const fs = Math.max(15, Math.round(cv.width * 0.03));
   octx.font = `600 ${fs}px sans-serif`;
   octx.textAlign = 'right'; octx.textBaseline = 'bottom';
