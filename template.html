@@ -1219,7 +1219,7 @@ function updateMagLabel(){
 $('magSel').oninput = () => { updateMagLabel(); draw(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw;
 function setMode(m){
   const w = $('wrap');
-  w.classList.remove('m-mobile', 'm-hd', 'm-4k');
+  w.classList.remove('m-mobile', 'm-hd', 'm-4k', 'm-full'); // モード切替時は全画面も必ず解除する（fina 報告 2026-11-24）
   w.classList.add(m === 'mobile' ? 'm-mobile' : m === 'hd' ? 'm-hd' : 'm-4k');
   $('bModePC').style.display = m === 'mobile' ? '' : 'none';
   $('bModeMobile').style.display = m === 'mobile' ? 'none' : '';
@@ -1323,13 +1323,13 @@ let drag = null, pinch = null;
 const ptrs = new Map();
 cv.addEventListener('pointerdown', e => {
   cv.setPointerCapture(e.pointerId);
-  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, pt: e.pointerType || 'touch' });
   if (ptrs.size === 2){
     const [a, b] = [...ptrs.values()];
     pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), fov: state.fov };
     drag = null;
   } else {
-    drag = { x: e.clientX, y: e.clientY, az: state.az, alt: state.alt, t: performance.now() };
+    drag = { x: e.clientX, y: e.clientY, az: state.az, alt: state.alt, t: performance.now(), pt: e.pointerType || 'touch' };
   }
 });
 cv.addEventListener('pointermove', e => {
@@ -1354,7 +1354,8 @@ cv.addEventListener('pointermove', e => {
 });
 let lastFullTap = 0;
 function ptrEnd(e){
-  const isTap = drag && ptrs.size === 1 && performance.now() - drag.t < 300 &&
+  // タップ判定はタッチ／ペンだけ。PC のマウスの素早いクリックをタップと誤認しない（fina 報告 2026-11-24）
+  const isTap = drag && drag.pt !== 'mouse' && ptrs.size === 1 && performance.now() - drag.t < 300 &&
       Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8;
   if (isTap && $('wrap').classList.contains('m-full')){
     const now = performance.now();
@@ -1367,7 +1368,7 @@ function ptrEnd(e){
   if (ptrs.size < 2) pinch = null;
   if (ptrs.size === 1){
     const [p] = [...ptrs.values()];
-    drag = { x: p.x, y: p.y, az: state.az, alt: state.alt, t: performance.now() };
+    drag = { x: p.x, y: p.y, az: state.az, alt: state.alt, t: performance.now(), pt: p.pt || 'touch' };
   } else if (ptrs.size === 0) drag = null;
 }
 cv.addEventListener('pointerup', ptrEnd);
