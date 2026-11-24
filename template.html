@@ -1231,7 +1231,21 @@ $('bZenith').onclick = () => { state.alt = 90; draw(); };
     if (sel.value === '') return;
     const i = Number(sel.value), sn = SNE[i];
     setJD(SNE_JD[i] + snRiseDays() + (20 - 9)/24); // 極大の日 20:00
-    const [ra, dec] = applyPrec(precessMatrix(state.jd), sn[4], sn[5]);
+    let [ra, dec] = applyPrec(precessMatrix(state.jd), sn[4], sn[5]);
+    let [, al] = altaz(ra, dec, rev(gmst(state.jd) + state.lon), state.lat);
+    if (al < 0){
+      // その時刻に地平線の下なら、その日の南中（最高高度）の時刻へ移す（SN 185 のような低空の客星用）
+      const day0 = Math.floor(state.jd - 0.5) + 0.5; // その日 00:00 JST の JD
+      let best = null;
+      for (let h = 0; h < 24; h += 0.25){
+        const jd = day0 + h/24 + 9/24;
+        const [r2, d2] = applyPrec(precessMatrix(jd), sn[4], sn[5]);
+        const [, a2] = altaz(r2, d2, rev(gmst(jd) + state.lon), state.lat);
+        if (!best || a2 > best.al) best = { jd, al: a2 };
+      }
+      if (best) setJD(best.jd);
+      [ra, dec] = applyPrec(precessMatrix(state.jd), sn[4], sn[5]);
+    }
     centerOn(ra, dec); draw();
     sel.value = '';
   });
