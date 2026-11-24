@@ -837,7 +837,8 @@ function draw(){
     ctx.globalAlpha = b.a;
     ctx.fillStyle = b.col;
     ctx.beginPath();
-    for (let j = 0; j < b.pts.length; j += 2) ctx.arc(b.pts[j], b.pts[j+1], b.r, 0, 7);
+    // arc を続けて呼ぶと前後の円が直線で結ばれて塗りが蜘蛛の巣状になる。各円の前に moveTo でパスを切る
+    for (let j = 0; j < b.pts.length; j += 2){ ctx.moveTo(b.pts[j] + b.r, b.pts[j+1]); ctx.arc(b.pts[j], b.pts[j+1], b.r, 0, 7); }
     ctx.fill();
   }
   ctx.globalAlpha = 1;
