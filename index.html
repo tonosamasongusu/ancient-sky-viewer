@@ -67,6 +67,24 @@
   /* PC版 4K：操作部の大きさは HD と同じにし、星空の表示だけを大きくする（fina 要望 2026-11-24） */
   #wrap.m-4k { max-width: 2300px; }
   #wrap.m-4k #sky { aspect-ratio: 16 / 10; max-height: 76vh; }
+  /* PC版：表示領域を約80%に縮小して1画面に収め、UI は白背景・黒文字にする（fina 要望 2026-11-24） */
+  #wrap.m-hd #sky { max-height: 54vh; }
+  #wrap.m-4k #sky { max-height: 61vh; }
+  html:has(#wrap.m-hd), body:has(#wrap.m-hd), html:has(#wrap.m-4k), body:has(#wrap.m-4k) { background: #ffffff; }
+  #wrap.m-hd, #wrap.m-4k { background: #ffffff; color: #141414; }
+  #wrap.m-hd .row label, #wrap.m-4k .row label, #wrap.m-hd .chk, #wrap.m-4k .chk { color: #333333; }
+  #wrap.m-hd input, #wrap.m-hd select, #wrap.m-hd button,
+  #wrap.m-4k input, #wrap.m-4k select, #wrap.m-4k button { background: #f2f4f8; color: #141414; border-color: #aeb8cc; }
+  #wrap.m-hd button:hover, #wrap.m-4k button:hover { background: #dde4f0; }
+  #wrap.m-hd .modeBtns button.on, #wrap.m-4k .modeBtns button.on { background: #c9d6f2; border-color: #5b7bd6; color: #141414; }
+  #wrap.m-hd #readout, #wrap.m-4k #readout { color: #222222; }
+  #wrap.m-hd #note, #wrap.m-4k #note { color: #555555; }
+  #wrap.m-hd #sky, #wrap.m-4k #sky { border-color: #98a4bd; }
+  #wrap.m-hd #cityname, #wrap.m-4k #cityname { color: #b26a00 !important; }
+  #wrap.m-hd #nearby, #wrap.m-4k #nearby { color: #333333 !important; }
+  #wrap.m-hd #snMeta, #wrap.m-4k #snMeta { color: #555555 !important; }
+  #wrap.m-hd #snInfo, #wrap.m-4k #snInfo { color: #7a4d00 !important; }
+  #wrap.m-hd #fovVal, #wrap.m-4k #fovVal { color: #333333 !important; }
 </style>
 <div id="wrap" class="m-mobile">
   <h1>古代文献の再現も出来る夜空ビューア<span class="modeBtns" style="float:right"><button id="bModePC">PC版</button><button id="bModeMobile" style="display:none">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bHelp">ヘルプ</button></span></h1>

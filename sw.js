@@ -1,5 +1,5 @@
 // 夜空ビューア Service Worker：本体一式をキャッシュしてオフラインでも開けるようにする
-const CACHE = 'sky-viewer-v16';
+const CACHE = 'sky-viewer-v17';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
