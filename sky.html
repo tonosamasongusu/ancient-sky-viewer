@@ -64,13 +64,9 @@
   /* PC版 HD */
   #wrap.m-hd { max-width: 1500px; }
   #wrap.m-hd #sky { aspect-ratio: 16 / 10; max-height: 68vh; }
-  /* PC版 4K */
+  /* PC版 4K：操作部の大きさは HD と同じにし、星空の表示だけを大きくする（fina 要望 2026-11-24） */
   #wrap.m-4k { max-width: 2300px; }
-  #wrap.m-4k h1 { font-size: 22px; }
-  #wrap.m-4k input, #wrap.m-4k select, #wrap.m-4k button { font-size: 16px; padding: 9px 12px; }
-  #wrap.m-4k .row label, #wrap.m-4k .chk { font-size: 14px; }
-  #wrap.m-4k #readout { font-size: 15px; }
-  #wrap.m-4k #sky { max-height: 72vh; }
+  #wrap.m-4k #sky { aspect-ratio: 16 / 10; max-height: 76vh; }
 </style>
 <div id="wrap" class="m-mobile">
   <h1>古代文献の再現も出来る夜空ビューア<span class="modeBtns" style="float:right"><button id="bModePC">PC版</button><button id="bModeMobile" style="display:none">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bHelp">ヘルプ</button></span></h1>
