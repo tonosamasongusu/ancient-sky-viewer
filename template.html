@@ -116,6 +116,10 @@
     <select id="cometSel"><option value="">選択すると、その彗星の近日点の10日前へ移動します</option></select>
   </div>
   <div class="row">
+    <label>客星（超新星）</label>
+    <select id="snSel"><option value="">選択すると、その超新星の極大の頃へ移動します</option></select>
+  </div>
+  <div class="row">
     <label>視野</label><input type="range" id="fov" min="25" max="120" step="1">
     <span id="fovVal" style="font-size:12px;color:#9fb0d0"></span>
     <label class="chk"><input type="checkbox" id="cLines" checked> 星座線</label>
@@ -127,7 +131,7 @@
     <button id="bFull">星空を全画面</button>
   </div>
   <div id="readout"></div>
-  <div id="note">空の部分をドラッグすると、見上げる方角（方位・高度）が動きます。ホイール／視野スライダで拡大・縮小。スマホ版では、空をタップしても全画面になります（戻るは右下のボタン）。時刻は日本時間（UTC+9）として入力します。暦は1582年10月15日以降がグレゴリオ暦、それ以前はユリウス暦で表示します（古代の文献の日付は、まずこの暦に直してから入れてください）。星は8等まで約41,000個（Hipparcos 系データ、等級スライダで表示上限を変更可能）、歳差を補正しているので古代でも配置が合います。惑星・月・太陽は Schlyter の簡易計算法（誤差1〜2分角、時代が離れると数分角〜）。ハレー彗星は出現ごとの近日点日（Catalog of Cometary Orbits / Yeomans）＋軌道要素を837年・1986年・2061年の公表値の間で内挿したもので、古代ほど誤差が大きく（数度まで）なります。古代は地球の自転の遅れ（ΔT）で数時間ずれる事があるので、文献の「日没時」「夜明け前」等の記述に合わせて時刻を前後させて合わせ込んでください。都市リストの遺跡・古代都市の位置は概略で、出典と照合済みの物以外には（仮）を付けています。「主要な彗星」は83個で、軌道要素はJPL SBDBの公表値、明るさは同データベースの絶対等級フィット（無い歴史的彗星は記録からの概算）です。周期彗星は収録した回帰の前後でのみ正しく、古代の彗星ほど位置の誤差が大きくなります。</div>
+  <div id="note">空の部分をドラッグすると、見上げる方角（方位・高度）が動きます。ホイール／視野スライダで拡大・縮小。スマホ版では、空をタップしても全画面になります（戻るは右下のボタン）。時刻は日本時間（UTC+9）として入力します。暦は1582年10月15日以降がグレゴリオ暦、それ以前はユリウス暦で表示します（古代の文献の日付は、まずこの暦に直してから入れてください）。星は8等まで約41,000個（Hipparcos 系データ、等級スライダで表示上限を変更可能）、歳差を補正しているので古代でも配置が合います。惑星・月・太陽は Schlyter の簡易計算法（誤差1〜2分角、時代が離れると数分角〜）。ハレー彗星は出現ごとの近日点日（Catalog of Cometary Orbits / Yeomans）＋軌道要素を837年・1986年・2061年の公表値の間で内挿したもので、古代ほど誤差が大きく（数度まで）なります。古代は地球の自転の遅れ（ΔT）で数時間ずれる事があるので、文献の「日没時」「夜明け前」等の記述に合わせて時刻を前後させて合わせ込んでください。都市リストの遺跡・古代都市の位置は概略で、出典と照合済みの物以外には（仮）を付けています。「主要な彗星」は83個で、軌道要素はJPL SBDBの公表値、明るさは同データベースの絶対等級フィット（無い歴史的彗星は記録からの概算）です。周期彗星は収録した回帰の前後でのみ正しく、古代の彗星ほど位置の誤差が大きくなります。客星（歴史的超新星）は文献記録の8個を収録し、出現から一定期間で極大まで明るくなり、記録の期間をかけて衰える形で再現しています（極大等級・期間は現代の推定です）。</div>
 </div>
 <script>
 /*SKYDATA*/
@@ -607,6 +611,26 @@ function drawTail(p, tp){
     ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(tp[0] + px*off, tp[1] + py*off); ctx.stroke();
   }
 }
+// 歴史的超新星（客星）：文献記録の8個。[名前, 出現 年/月/日, 赤経, 赤緯(J2000), 極大等級, 上昇日数, 見えた期間]
+// 極大等級・期間は現代の推定（Stephenson & Green ほか）。光度は、出現から一定期間で極大まで明るくなり、
+// その後は期間の終わりに6.5等まで衰える形（fina の形 2026-11-24）
+const SNE = [
+  ['SN 185（後漢書）', 185, 12, 7, 220.8, -62.5, -6, 20, 240],
+  ['SN 386（宋書）', 386, 4, 15, 273.5, -19.8, 1.5, 10, 90],
+  ['SN 393（宋書）', 393, 2, 27, 258.5, -39.8, -3, 15, 240],
+  ['SN 1006', 1006, 4, 30, 225.5, -42.1, -7.5, 15, 1000],
+  ['SN 1054（かに星雲）', 1054, 7, 4, 83.6, 22.0, -6, 10, 653],
+  ['SN 1181（明月記・吾妻鏡）', 1181, 8, 7, 13.3, 67.5, -1, 10, 185],
+  ['SN 1572（ティコ）', 1572, 11, 11, 6.3, 64.2, -4, 15, 480],
+  ['SN 1604（ケプラー）', 1604, 10, 9, 262.5, -21.5, -2.5, 20, 365],
+];
+const SNE_JD = SNE.map(sn => calToJD(sn[1], sn[2], sn[3]));
+function snMagAt(i, jd){
+  const sn = SNE[i], tt = jd - SNE_JD[i];
+  if (tt < 0 || tt > sn[8]) return null;
+  if (tt < sn[7]) return 6.5 + (sn[6] - 6.5)*(tt/sn[7]);
+  return sn[6] + (6.5 - sn[6])*((tt - sn[7])/(sn[8] - sn[7]));
+}
 // 月：見かけの大きさ（距離で変わる視半径）と満ち欠けを描く（fina 要望 2026-11-24）
 function drawMoon(mp, sp, lst){
   let [az, al] = altaz(mp.ra, mp.dec, lst, state.lat);
@@ -951,6 +975,31 @@ function draw(){
   ctx.moveTo(W/2 + 4, H/2); ctx.lineTo(W/2 + 11, H/2);
   ctx.moveTo(W/2, H/2 - 11); ctx.lineTo(W/2, H/2 - 4);
   ctx.moveTo(W/2, H/2 + 4); ctx.lineTo(W/2, H/2 + 11); ctx.stroke();
+  // 客星（歴史的超新星）：出現期間中だけ光度曲線つきで描く
+  for (let i = 0; i < SNE.length; i++){
+    const sn = SNE[i], mag = snMagAt(i, state.jd);
+    if (mag === null) continue;
+    const [ra, dec] = applyPrec(P, sn[4], sn[5]);
+    const [az, al] = altaz(ra, dec, lst, state.lat);
+    if (al < -2) continue;
+    const p = project(az, al); if (!p) continue;
+    const r = Math.max(1.1, 4.2 - mag*0.62);
+    ctx.save();
+    if (mag < 1){
+      const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r*3.2);
+      g.addColorStop(0, 'rgba(255,244,214,0.35)'); g.addColorStop(1, 'rgba(255,244,214,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(p[0], p[1], r*3.2, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = al < 0 ? 0.45 : 1;
+    ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 7);
+    ctx.fillStyle = '#fff3cf'; ctx.fill();
+    ctx.restore();
+    ctx.font = '600 11.5px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffe9a8';
+    ctx.fillText('客星 ' + sn[0].split('（')[0], p[0] + r + 3, p[1] + 3);
+    extra += `客星 ${sn[0].split('（')[0]}：約${mag.toFixed(1)}等・方位 ${az.toFixed(0)}°・高度 ${al.toFixed(0)}°　`;
+  }
   const azTxt = ['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西'][Math.round(state.az/22.5) % 16];
   const cn = nearestCity(state.lat, state.lon);
   document.getElementById('cityname').textContent = cn ? '≒ ' + cn : '';
@@ -1156,6 +1205,23 @@ $('bZenith').onclick = () => { state.alt = 90; draw(); };
     setJD(Math.floor(state.comet[2] - 10) + 0.5 + (20 - 9)/24); // 近日点の10日前 20:00
     const cp = cometPos(state.comet, state.jd, sunPos(state.jd - 2451543.5));
     if (cp){ centerOn(cp.ra, cp.dec); draw(); }
+  });
+}
+// 客星セレクト
+{
+  const sel = $('snSel');
+  SNE.forEach((sn, idx) => {
+    const o = document.createElement('option');
+    o.value = idx; o.textContent = sn[0];
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => {
+    if (sel.value === '') return;
+    const i = Number(sel.value), sn = SNE[i];
+    setJD(SNE_JD[i] + sn[7] + (20 - 9)/24); // 極大の日 20:00
+    const [ra, dec] = applyPrec(precessMatrix(state.jd), sn[4], sn[5]);
+    centerOn(ra, dec); draw();
+    sel.value = '';
   });
 }
 setInterval(() => { if (window.__cv) draw(); }, 180);
