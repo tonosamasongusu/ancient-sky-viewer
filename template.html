@@ -131,7 +131,7 @@
     <button id="bFull">星空を全画面</button>
   </div>
   <div id="readout"></div>
-  <div id="note">空の部分をドラッグすると、見上げる方角（方位・高度）が動きます。ホイール／視野スライダで拡大・縮小。スマホ版では、空をタップしても全画面になります（戻るは右下のボタン）。時刻は日本時間（UTC+9）として入力します。暦は1582年10月15日以降がグレゴリオ暦、それ以前はユリウス暦で表示します（古代の文献の日付は、まずこの暦に直してから入れてください）。星は8等まで約41,000個（Hipparcos 系データ、等級スライダで表示上限を変更可能）、歳差を補正しているので古代でも配置が合います。惑星・月・太陽は Schlyter の簡易計算法（誤差1〜2分角、時代が離れると数分角〜）。ハレー彗星は出現ごとの近日点日（Catalog of Cometary Orbits / Yeomans）＋軌道要素を837年・1986年・2061年の公表値の間で内挿したもので、古代ほど誤差が大きく（数度まで）なります。古代は地球の自転の遅れ（ΔT）で数時間ずれる事があるので、文献の「日没時」「夜明け前」等の記述に合わせて時刻を前後させて合わせ込んでください。都市リストの遺跡・古代都市の位置は概略で、出典と照合済みの物以外には（仮）を付けています。「主要な彗星」は83個で、軌道要素はJPL SBDBの公表値、明るさは同データベースの絶対等級フィット（無い歴史的彗星は記録からの概算）です。周期彗星は収録した回帰の前後でのみ正しく、古代の彗星ほど位置の誤差が大きくなります。客星（歴史的超新星）は文献記録の8個を収録し、出現から一定期間で極大まで明るくなり、記録の期間をかけて衰える形で再現しています（極大等級・期間は現代の推定です）。</div>
+  <div id="note">空の部分をドラッグすると、見上げる方角（方位・高度）が動きます。ホイール／視野スライダで拡大・縮小。スマホ版では、空をタップしても全画面になります（戻るは右下のボタン）。時刻は日本時間（UTC+9）として入力します。暦は1582年10月15日以降がグレゴリオ暦、それ以前はユリウス暦で表示します（古代の文献の日付は、まずこの暦に直してから入れてください）。星は8等まで約41,000個（Hipparcos 系データ、等級スライダで表示上限を変更可能）、歳差を補正しているので古代でも配置が合います。惑星・月・太陽は Schlyter の簡易計算法（誤差1〜2分角、時代が離れると数分角〜）。ハレー彗星は出現ごとの近日点日（Catalog of Cometary Orbits / Yeomans）＋軌道要素を837年・1986年・2061年の公表値の間で内挿したもので、古代ほど誤差が大きく（数度まで）なります。古代は地球の自転の遅れ（ΔT）で数時間ずれる事があるので、文献の「日没時」「夜明け前」等の記述に合わせて時刻を前後させて合わせ込んでください。都市リストの遺跡・古代都市の位置は概略で、出典と照合済みの物以外には（仮）を付けています。「主要な彗星」は83個で、軌道要素はJPL SBDBの公表値、明るさは同データベースの絶対等級フィット（無い歴史的彗星は記録からの概算）です。周期彗星は収録した回帰の前後でのみ正しく、古代の彗星ほど位置の誤差が大きくなります。客星（歴史的超新星）は文献記録の8個を収録し、出現すると大きく光って極大に達し、その後はニッケル56とコバルト56の崩壊をポグソンの式で等級に直した形で、記録の期間をかけて衰えるよう再現しています（極大等級・期間は現代の推定です）。</div>
 </div>
 <script>
 /*SKYDATA*/
@@ -625,12 +625,21 @@ const SNE = [
   ['SN 1604（ケプラー）', 1604, 10, 9, 262.5, -21.5, -2.5, 20, 365],
 ];
 const SNE_JD = SNE.map(sn => calToJD(sn[1], sn[2], sn[3]));
+// 上昇の長さ：タイムプラス再生で約5秒かけて極大に達する量（現在の速度で5秒間に進む日数）
+function snRiseDays(){ return Math.max(0.05, Math.min(2, 5*state.speed/72)); }
 function snMagAt(i, jd){
-  const sn = SNE[i], tt = jd - SNE_JD[i];
+  const sn = SNE[i], tt = jd - SNE_JD[i], rise = snRiseDays();
   if (tt < 0 || tt > sn[8]) return null;
-  if (tt < sn[7]) return 6.5 + (sn[6] - 6.5)*(tt/sn[7]);
-  return sn[6] + (6.5 - sn[6])*((tt - sn[7])/(sn[8] - sn[7]));
+  if (tt < rise) return 6.5 + (sn[6] - 6.5)*(tt/rise);
+  // 減衰は直線ではない：光度（フラックス）の側で、ニッケル56（半減期6.1日）とコバルト56（同77.2日）の
+  // 2成分の和として衰えさせ、ポグソンの式（5等級＝100倍）で等級に戻す。記録の期間の終わりに
+  // 6.5等へ届くよう正規化する（fina 指摘：ポグソンの式 2026-11-24）
+  const d = tt - rise, span = sn[8] - rise;
+  const ratio = Math.log10(1/snFlux(d)) / Math.log10(1/snFlux(span));
+  return sn[6] + (6.5 - sn[6])*ratio;
 }
+// 超新星の光度減衰（相対フラックス）：Ni-56 と Co-56 の崩壊の和
+function snFlux(d){ return 0.5*Math.pow(2, -d/6.1) + 0.5*Math.pow(2, -d/77.2); }
 // 月：見かけの大きさ（距離で変わる視半径）と満ち欠けを描く（fina 要望 2026-11-24）
 function drawMoon(mp, sp, lst){
   let [az, al] = altaz(mp.ra, mp.dec, lst, state.lat);
@@ -983,11 +992,14 @@ function draw(){
     const [az, al] = altaz(ra, dec, lst, state.lat);
     if (al < -2) continue;
     const p = project(az, al); if (!p) continue;
-    const r = Math.max(1.1, 4.2 - mag*0.62);
+    let r = Math.max(1.1, 4.2 - mag*0.62);
+    const tt = state.jd - SNE_JD[i], rise = snRiseDays();
+    const flare = tt < rise ? tt/rise : 0; // 上昇中だけ 0→1
+    if (flare > 0) r *= 1 + 0.9*flare;
     ctx.save();
-    if (mag < 1){
+    if (mag < 1 || flare > 0){
       const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r*3.2);
-      g.addColorStop(0, 'rgba(255,244,214,0.35)'); g.addColorStop(1, 'rgba(255,244,214,0)');
+      g.addColorStop(0, `rgba(255,244,214,${0.35 + 0.3*flare})`); g.addColorStop(1, 'rgba(255,244,214,0)');
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(p[0], p[1], r*3.2, 0, 7); ctx.fill();
     }
@@ -1218,7 +1230,7 @@ $('bZenith').onclick = () => { state.alt = 90; draw(); };
   sel.addEventListener('change', () => {
     if (sel.value === '') return;
     const i = Number(sel.value), sn = SNE[i];
-    setJD(SNE_JD[i] + sn[7] + (20 - 9)/24); // 極大の日 20:00
+    setJD(SNE_JD[i] + snRiseDays() + (20 - 9)/24); // 極大の日 20:00
     const [ra, dec] = applyPrec(precessMatrix(state.jd), sn[4], sn[5]);
     centerOn(ra, dec); draw();
     sel.value = '';
