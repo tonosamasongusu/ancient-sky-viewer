@@ -154,9 +154,38 @@ function buildStarVec(){
     starCol[i] = bvColor(bv);
     starMag[i] = mag;
   }
+  starOrder = new Uint32Array(n);
+  for (let i = 0; i < n; i++) starOrder[i] = i;
+  starOrder.sort((a, b) => starMag[a] - starMag[b]);
+  starMagOrd = new Float32Array(n);
+  for (let k = 0; k < n; k++) starMagOrd[k] = starMag[starOrder[k]];
   eqCache = { key: null, v: null }; horCache = { key: null, v: null };
 }
-function loadData(){ stars = SKYDATA.stars; lines = SKYDATA.lines; names = SKYDATA.names; buildStarVec(); }
+function loadData(){ stars = SKYDATA.stars; lines = SKYDATA.lines; names = SKYDATA.names; buildStarVec(); buildMWVec(); }
+// 等級順インデックス（描画ループを表示上限で打ち切るため）と、天の川のベクトル事前計算（星と同じ方式で高速化）
+let starOrder = null, starMagOrd = null;
+let mwVec = null, mwLayers = null, mwEqCache = { key: null, v: null }, mwHorCache = { key: null, v: null };
+function buildMWVec(){
+  if (typeof MWDATA === 'undefined') return;
+  let count = 0;
+  for (const rings of MWDATA) for (const ring of rings) count += ring.length;
+  mwVec = new Float32Array(count*3); mwLayers = [];
+  let idx = 0;
+  for (const rings of MWDATA){
+    const layer = [];
+    for (const ring of rings){
+      const rIdx = [];
+      for (const [ra0, dec0] of ring){
+        const r = (ra0 < 0 ? ra0 + 360 : ra0)*D2R, d = dec0*D2R, cd = Math.cos(d);
+        mwVec[idx*3] = cd*Math.cos(r); mwVec[idx*3+1] = cd*Math.sin(r); mwVec[idx*3+2] = Math.sin(d);
+        rIdx.push(idx); idx++;
+      }
+      layer.push(rIdx);
+    }
+    mwLayers.push(layer);
+  }
+  mwEqCache = { key: null, v: null }; mwHorCache = { key: null, v: null };
+}
 
 // ---------- 暦 <-> ユリウス日（1582年を境にユリウス暦/グレゴリオ暦） ----------
 function calToJD(y, m, d){ // その日の 0時 (UT) の JD
@@ -588,15 +617,65 @@ function draw(){
     if (p[0] < -20 || p[0] > W + 20 || p[1] < -20 || p[1] > H + 20) return;
     ctx.fillStyle = '#8fb0ff'; ctx.fillText(t, p[0], p[1]);
   });
-  if ($('cMW').checked && typeof MWDATA !== 'undefined'){
+  if ($('cMW').checked && mwLayers){
+    // 天の川：星と同じキャッシュ済みベクトルで変換する（毎フレームの歳差＋地平変換の三角関数をやめる）
+    const jdKm = Math.round(state.jd*2)/2;
+    if (!mwEqCache.v || mwEqCache.key !== jdKm){
+      const Pc = precessMatrix(jdKm);
+      const v = new Float32Array(mwVec.length);
+      for (let i = 0; i < mwVec.length; i += 3){
+        const x = mwVec[i], y = mwVec[i+1], z = mwVec[i+2];
+        v[i]   = Pc[0][0]*x + Pc[0][1]*y + Pc[0][2]*z;
+        v[i+1] = Pc[1][0]*x + Pc[1][1]*y + Pc[1][2]*z;
+        v[i+2] = Pc[2][0]*x + Pc[2][1]*y + Pc[2][2]*z;
+      }
+      mwEqCache = { key: jdKm, v };
+    }
+    const hKeyM = (Math.round(lst*100)/100) + '|' + state.lat + '|' + jdKm;
+    if (!mwHorCache.v || mwHorCache.key !== hKeyM){
+      const v = new Float32Array(mwVec.length);
+      const L = lst*D2R, cL = Math.cos(L), sL = Math.sin(L);
+      const ph = state.lat*D2R, cp = Math.cos(ph), sp = Math.sin(ph);
+      const eq = mwEqCache.v;
+      for (let i = 0; i < mwVec.length; i += 3){
+        const x = eq[i], y = eq[i+1], z = eq[i+2];
+        const tt = x*cL + y*sL;
+        v[i]   = y*cL - x*sL;
+        v[i+1] = cp*z - sp*tt;
+        v[i+2] = sp*z + cp*tt;
+      }
+      mwHorCache = { key: hKeyM, v };
+    }
+    const hvM = mwHorCache.v;
+    // 背景レイヤー化（fina 要望 2026-11-24）：最も明るい層の輪郭を太く薄くなぞり、柔らかい光暈を下に敷く
+    {
+      const bright = mwLayers[mwLayers.length - 1];
+      ctx.beginPath();
+      for (const ring of bright){
+        let pen = false;
+        for (const idx of ring){
+          const e = hvM[idx*3], nn = hvM[idx*3+1], uu = hvM[idx*3+2];
+          if (uu < -0.0349){ pen = false; continue; }
+          const az = rev(Math.atan2(e, nn)*R2D), al = Math.asin(Math.max(-1, Math.min(1, uu)))*R2D;
+          if (al < -2){ pen = false; continue; }
+          const p = project(az, al); if (!p){ pen = false; continue; }
+          if (!pen){ ctx.moveTo(p[0], p[1]); pen = true; } else ctx.lineTo(p[0], p[1]);
+        }
+        ctx.closePath();
+      }
+      ctx.strokeStyle = 'rgba(165,190,245,0.055)';
+      ctx.lineWidth = 15; ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
     const alphas = [0.08, 0.11, 0.14, 0.18, 0.24];
-    MWDATA.forEach((rings, li) => {
+    mwLayers.forEach((rings, li) => {
       ctx.beginPath();
       for (const ring of rings){
         let pen = false;
-        for (const [ra0, dec0] of ring){
-          const [ra, dec] = applyPrec(P, ra0 < 0 ? ra0 + 360 : ra0, dec0);
-          const [az, al] = altaz(ra, dec, lst, state.lat);
+        for (const idx of ring){
+          const e = hvM[idx*3], nn = hvM[idx*3+1], uu = hvM[idx*3+2];
+          if (uu < -0.0349){ pen = false; continue; }
+          const az = rev(Math.atan2(e, nn)*R2D), al = Math.asin(Math.max(-1, Math.min(1, uu)))*R2D;
           if (al < -2){ pen = false; continue; }
           const p = project(az, al); if (!p){ pen = false; continue; }
           if (!pen){ ctx.moveTo(p[0], p[1]); pen = true; } else ctx.lineTo(p[0], p[1]);
@@ -659,9 +738,12 @@ function draw(){
   const sPx = (H/2) / (2*Math.tan(state.fov*D2R/4));
   const cosLim = Math.cos(2*Math.atan((Math.hypot(W/2, H/2)/sPx)/2)) - 0.02;
   const showNames = $('cNames').checked;
-  for (let i = 0; i < stars.length; i++){
-    const mag = starMag[i];
-    if (mag > magLim) continue;
+  const buckets = new Map();
+  const namedStars = [];
+  for (let k = 0; k < stars.length; k++){
+    const mag = starMagOrd[k];
+    if (mag > magLim) break; // 等級順に並んでいるので上限で打ち切れる（全数走査をやめる）
+    const i = starOrder[k];
     const e = hv[i*3], nn = hv[i*3+1], uu = hv[i*3+2];
     if (uu < -0.017) continue; // 高度 −1° 未満
     if (e*vcE + nn*vcN + uu*vcU < cosLim) continue; // 画面の外
@@ -671,24 +753,41 @@ function draw(){
     const dim = al < 0 ? 0.35 : (al < 8 ? 0.55 + al/8*0.45 : 1);
     // 認識しやすさ優先：等級→大きさの対応を実物の光より誇張する（fina 要望 2026-11-24）
     const r = starRad[i];
-    ctx.globalAlpha = dim;
     if (mag < 1.0){
+      // 光輪は個別描画のまま（対象は全天でも十数個だけ）
+      ctx.globalAlpha = dim;
       const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r*3.2);
       g.addColorStop(0, 'rgba(255,255,255,0.35)');
       g.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(p[0], p[1], r*3.2, 0, 7); ctx.fill();
     }
-    ctx.fillStyle = starCol[i];
-    ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 7); ctx.fill();
-    if (showNames && names[i] && mag <= 2.6){
-      ctx.globalAlpha = Math.min(1, dim + 0.15);
-      ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
-      ctx.fillStyle = '#c9d6f8';
-      ctx.fillText(names[i], p[0] + r + 3, p[1] + 3);
-    }
+    // 星本体は色×半径（0.25px単位）×明るさ（5段）のバケツに集めて一括描画する
+    const rq = Math.round(r*4)/4;
+    const aq = dim < 0.5 ? 0.35 : dim < 0.7 ? 0.65 : dim < 0.85 ? 0.8 : dim < 0.97 ? 0.92 : 1;
+    const bkey = starCol[i] + '|' + rq + '|' + aq;
+    let b = buckets.get(bkey);
+    if (!b){ b = { col: starCol[i], r: rq, a: aq, pts: [] }; buckets.set(bkey, b); }
+    b.pts.push(p[0], p[1]);
+    if (showNames && names[i] && mag <= 2.6) namedStars.push([names[i], p[0], p[1], r, dim]);
+  }
+  for (const b of buckets.values()){
+    ctx.globalAlpha = b.a;
+    ctx.fillStyle = b.col;
+    ctx.beginPath();
+    for (let j = 0; j < b.pts.length; j += 2) ctx.arc(b.pts[j], b.pts[j+1], b.r, 0, 7);
+    ctx.fill();
   }
   ctx.globalAlpha = 1;
+  if (namedStars.length){
+    ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#c9d6f8';
+    for (const [nm, x, y, r, dim] of namedStars){
+      ctx.globalAlpha = Math.min(1, dim + 0.15);
+      ctx.fillText(nm, x + r + 3, y + 3);
+    }
+    ctx.globalAlpha = 1;
+  }
   // 惑星・月・太陽・彗星
   const d = state.jd - 2451543.5;
   const els = bodyElements(d);
