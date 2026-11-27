@@ -94,7 +94,7 @@
   #wrap.m-hd #fovVal, #wrap.m-4k #fovVal { color: #333333 !important; }
 </style>
 <div id="wrap" class="m-mobile">
-  <h1>古代文献の再現も出来る夜空ビューア<span class="modeBtns" style="float:right"><button id="bModePC">PC版</button><button id="bModeMobile" style="display:none">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bHelp">ヘルプ</button></span></h1>
+  <h1>古代文献の再現も出来る夜空ビューア<span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC">PC版</button><button id="bModeMobile" style="display:none">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bHelp">ヘルプ</button></span></h1>
   <canvas id="sky"></canvas>
   <canvas id="gl"></canvas>
   <canvas id="top"></canvas>
@@ -1404,6 +1404,7 @@ function setMode(m){
   $('bModeMobile').style.display = m === 'mobile' ? 'none' : '';
   $('bModeHD').style.display = m === 'mobile' ? 'none' : '';
   $('bMode4K').style.display = m === 'mobile' ? 'none' : '';
+  $('bFs').style.display = (m === 'mobile' || !window.__fsOK) ? 'none' : '';
   $('bModeHD').classList.toggle('on', m === 'hd');
   $('bMode4K').classList.toggle('on', m === '4k');
   updateMagLabel();
@@ -1414,6 +1415,16 @@ $('bModeMobile').onclick = () => setMode('mobile');
 $('bModeHD').onclick = () => setMode('hd');
 $('bMode4K').onclick = () => setMode('4k');
 $('bHelp').onclick = () => { $('note').classList.toggle('open'); resize(); };
+// ブラウザ全画面（PC版のみ、fina 要望 2026-11-27）：タイトル段のボタンで入り、もう一度押すか Esc で戻る
+window.__fsOK = !!document.documentElement.requestFullscreen;
+$('bFs').onclick = () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+};
+document.addEventListener('fullscreenchange', () => {
+  $('bFs').textContent = document.fullscreenElement ? '戻す' : '全画面';
+  resize();
+});
 $('bFull').onclick = () => { $('wrap').classList.add('m-full'); resize(); };
 $('bBack').onclick = () => { $('wrap').classList.remove('m-full'); resize(); };
 $('bZenith').onclick = () => { state.alt = 90; draw(); };
