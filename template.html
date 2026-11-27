@@ -97,6 +97,8 @@
   #wrap.m-fullpc #fsBarPc { display: flex; align-items: center; gap: 10px; position: fixed; left: 12px; bottom: 12px; z-index: 20; background: rgba(16,24,48,0.85); padding: 8px 12px; border-radius: 10px; color: #dfe8ff; font-size: 13px; }
   #wrap.m-fullpc #fsBarPc input[type="range"] { width: 110px; }
   #wrap.m-fullpc #fsBarPc button { padding: 6px 10px; font-size: 13px; }
+  #wrap.m-fullpc #fsBarPc span[id$="Val"] { display: inline-block; min-width: 50px; }
+  #magVal { display: inline-block; min-width: 50px; }
   #wrap.m-fullpc #fsInfo { display: block; position: fixed; right: 12px; bottom: 12px; left: auto; z-index: 20; background: rgba(16,24,48,0.85); padding: 6px 12px; border-radius: 10px; color: #dfe8ff; font-size: 14.5px; }
   #wrap.m-hd #cityname, #wrap.m-4k #cityname { color: #b26a00 !important; }
   #wrap.m-hd #nearby, #wrap.m-4k #nearby { color: #333333 !important; }
@@ -403,6 +405,14 @@ function infoString(){
   return `${$('era').value === 'bc' ? '紀元前' : ''}${$('yr').value}年${$('mo').value}月${$('dy').value}日 ${String($('hh').value).padStart(2, '0')}:${String($('mi').value).padStart(2, '0')}` + (cn ? `　${cn}` : '');
 }
 let fsInfoLast = '';
+let readoutLast = '';
+// スライダー操作中の描画間引き：input のたびに全描画せず、次のフレームで最新状態を1回だけ描く
+let drawQueued = false;
+function drawSoon(){
+  if (drawQueued) return;
+  drawQueued = true;
+  requestAnimationFrame(() => { drawQueued = false; draw(); });
+}
 function updateFsInfo(){
   const s = infoString();
   if (s !== fsInfoLast){ fsInfoLast = s; document.getElementById('fsInfo').textContent = s; }
@@ -1245,11 +1255,12 @@ function draw(){
   }
   const azTxt = ['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西'][Math.round(state.az/22.5) % 16];
   const cn = nearestCity(state.lat, state.lon);
-  document.getElementById('cityname').textContent = cn ? '≒ ' + cn : '';
+  const cnTxt = cn ? '≒ ' + cn : '';
+  if (document.getElementById('cityname').textContent !== cnTxt) document.getElementById('cityname').textContent = cnTxt;
   updateNearby();
   // 月齢・天体の情報も同じ行に続け、表示行を1行に収める（fina 指示 2026-11-24：縦を1行減らす）
-  $('readout').textContent =
-    `視線の中心：方位 ${state.az.toFixed(0)}°（${azTxt}）・高度 ${state.alt.toFixed(0)}°　／　場所：緯度 ${state.lat.toFixed(1)}・経度 ${state.lon.toFixed(1)}　` + extra;
+  const roTxt = `視線の中心：方位 ${state.az.toFixed(0)}°（${azTxt}）・高度 ${state.alt.toFixed(0)}°　／　場所：緯度 ${state.lat.toFixed(1)}・経度 ${state.lon.toFixed(1)}　` + extra;
+  if (roTxt !== readoutLast){ readoutLast = roTxt; $('readout').textContent = roTxt; }
   updateFsInfo();
 }
 function resize(){
@@ -1343,8 +1354,8 @@ $('spd').oninput = e => setSpeed(parseFloat(e.target.value));
 $('spdFs').oninput = e => setSpeed(parseFloat(e.target.value));
 $('spdPc').oninput = e => setSpeed(parseFloat(e.target.value));
 // PC全画面バーの視野・等級スライダー：本体側のスライダーと同じ状態を共有する
-$('fovPc').addEventListener('input', e => { state.fov = +e.target.value; $('fov').value = state.fov; $('fovVal').textContent = state.fov + '°'; $('fovPcVal').textContent = state.fov + '°'; draw(); });
-$('magPc').oninput = e => { $('magSel').value = e.target.value; $('magPcVal').textContent = '〜' + e.target.value + '等'; updateMagLabel(); draw(); };
+$('fovPc').addEventListener('input', e => { state.fov = +e.target.value; $('fov').value = state.fov; $('fovVal').textContent = state.fov + '°'; $('fovPcVal').textContent = state.fov + '°'; drawSoon(); });
+$('magPc').oninput = e => { $('magSel').value = e.target.value; $('magPcVal').textContent = '〜' + e.target.value + '等'; updateMagLabel(); drawSoon(); };
 $('lat').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)){ state.lat = Math.max(-89, Math.min(89, v)); syncPlaceSelects(); draw(); } });
 $('lon').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)){ state.lon = Math.max(-180, Math.min(180, v)); syncPlaceSelects(); draw(); } });
 function fillPlaces(gi){
@@ -1405,14 +1416,14 @@ function updateNearby(){
   });
 }
 syncPlaceSelects();
-$('fov').addEventListener('input', e => { state.fov = +e.target.value; $('fovVal').textContent = state.fov + '°'; draw(); });
+$('fov').addEventListener('input', e => { state.fov = +e.target.value; $('fovVal').textContent = state.fov + '°'; drawSoon(); });
 $('cLines').onchange = draw;
 function updateMagLabel(){
   const v = parseFloat($('magSel').value);
   const capped = $('wrap').classList.contains('m-mobile') && v > 6.9;
   $('magVal').textContent = capped ? '〜6.9等（スマホ上限）' : '〜' + $('magSel').value + '等';
 }
-$('magSel').oninput = () => { updateMagLabel(); draw(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw;
+$('magSel').oninput = () => { updateMagLabel(); drawSoon(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw;
 function setMode(m){
   const w = $('wrap');
   w.classList.remove('m-mobile', 'm-hd', 'm-4k', 'm-full', 'm-fullpc'); // モード切替時は全画面も必ず解除する（fina 報告 2026-11-24）
@@ -1588,7 +1599,7 @@ cv.addEventListener('pointercancel', ptrEnd);
 cv.addEventListener('wheel', e => {
   e.preventDefault();
   state.fov = Math.max(25, Math.min(120, state.fov + Math.sign(e.deltaY) * 4));
-  $('fov').value = state.fov; $('fovVal').textContent = state.fov + '°'; draw();
+  $('fov').value = state.fov; $('fovVal').textContent = state.fov + '°'; drawSoon();
 }, { passive: false });
 window.addEventListener('resize', resize);
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
