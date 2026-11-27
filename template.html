@@ -88,7 +88,8 @@
   #wrap.m-hd #note, #wrap.m-4k #note { color: #555555; }
   #wrap.m-hd #sky, #wrap.m-4k #sky { border-color: #98a4bd; }
   /* PC版のブラウザ内全画面：タイトル段は残し、操作部を隠して空を窓いっぱいにする（fina 指定 2026-11-27） */
-  #wrap.m-fullpc { height: 100dvh; display: flex; flex-direction: column; max-width: none; }
+  #wrap.m-fullpc { height: 100dvh; display: flex; flex-direction: column; max-width: none; padding: 0; }
+  body:has(#wrap.m-fullpc) { margin: 0; }
   #wrap.m-fullpc > *:not(h1):not(#sky):not(#gl):not(#top):not(#bBack):not(#fsBar):not(#fsInfo) { display: none !important; }
   #wrap.m-fullpc #sky { flex: 1 1 auto; min-height: 0; height: auto; width: 100%; aspect-ratio: auto; max-height: none; border: none; border-radius: 0; }
   #wrap.m-fullpc #bBack { display: block; }
