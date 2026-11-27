@@ -94,7 +94,7 @@
   #wrap.m-fullpc #sky { flex: 1 1 auto; min-height: 0; height: auto; width: 100%; aspect-ratio: auto; max-height: none; border: none; border-radius: 0; }
   /* 全画面下部の操作バー（スライダー3つ）と、右下の日付・時間・場所（fina 要望 2026-11-27） */
   #fsBarPc { display: none; }
-  #wrap.m-fullpc #fsBarPc { display: flex; align-items: center; gap: 10px; position: fixed; left: 12px; bottom: 12px; z-index: 20; background: rgba(16,24,48,0.85); padding: 8px 12px; border-radius: 10px; color: #dfe8ff; font-size: 13px; }
+  #wrap.m-fullpc #fsBarPc { display: flex; flex-wrap: wrap; max-width: calc(100vw - 200px); row-gap: 4px; align-items: center; gap: 10px; position: fixed; left: 12px; bottom: 12px; z-index: 20; background: rgba(16,24,48,0.85); padding: 8px 12px; border-radius: 10px; color: #dfe8ff; font-size: 13px; }
   #wrap.m-fullpc #fsBarPc input[type="range"] { width: 110px; }
   #wrap.m-fullpc #fsBarPc button { padding: 6px 10px; font-size: 13px; }
   #wrap.m-fullpc #fsBarPc span[id$="Val"] { display: inline-block; min-width: 50px; }
