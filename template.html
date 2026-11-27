@@ -107,69 +107,69 @@
   #wrap.m-hd #fovVal, #wrap.m-4k #fovVal { color: #333333 !important; }
 </style>
 <div id="wrap" class="m-mobile">
-  <h1>古代文献の再現も出来る夜空ビューア<span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC">PC版</button><button id="bModeMobile" style="display:none">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bHelp">ヘルプ</button></span></h1>
+  <h1><span id="ttl" data-i18n="ttl">古代文献の再現も出来る夜空ビューア</span><span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC" data-i18n="modePC">PC版</button><button id="bModeMobile" style="display:none" data-i18n="modeMobile">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bLang">EN</button> <button id="bHelp" data-i18n="help">ヘルプ</button></span></h1>
   <canvas id="sky"></canvas>
   <canvas id="gl"></canvas>
   <canvas id="top"></canvas>
-  <button id="bBack">戻る</button>
-  <div id="fsBar"><button id="bFsPlay">▶</button><label>速度</label><input type="range" id="spdFs" min="1" max="4.5" step="0.5" value="1"><span id="spdFsVal">×1.0</span><button id="bShot">撮影</button></div>
+  <button id="bBack" data-i18n="back">戻る</button>
+  <div id="fsBar"><button id="bFsPlay">▶</button><label data-i18n="speed">速度</label><input type="range" id="spdFs" min="1" max="4.5" step="0.5" value="1"><span id="spdFsVal">×1.0</span><button id="bShot" data-i18n="shot">撮影</button></div>
   <div id="fsInfo"></div>
-  <div id="fsBarPc"><button id="bPcPlay">▶</button><label>速度</label><input type="range" id="spdPc" min="1" max="4.5" step="0.5" value="1"><span id="spdPcVal">×1.0</span><label>視野</label><input type="range" id="fovPc" min="25" max="120" step="1"><span id="fovPcVal"></span><label>等級</label><input type="range" id="magPc" min="1" max="8" step="0.5" value="8"><span id="magPcVal">〜8等</span></div>
+  <div id="fsBarPc"><button id="bPcPlay">▶</button><label data-i18n="speed">速度</label><input type="range" id="spdPc" min="1" max="4.5" step="0.5" value="1"><span id="spdPcVal">×1.0</span><label data-i18n="fov">視野</label><input type="range" id="fovPc" min="25" max="120" step="1"><span id="fovPcVal"></span><label data-i18n="mag">等級</label><input type="range" id="magPc" min="1" max="8" step="0.5" value="8"><span id="magPcVal">〜8等</span></div>
   <div class="row">
-    <label>日時</label>
-    <select id="era"><option value="ad">西暦</option><option value="bc">紀元前</option></select>
-    <input type="number" id="yr" min="1" step="1"><label>年</label>
-    <input type="number" id="mo" min="1" max="12" step="1"><label>月</label>
-    <input type="number" id="dy" min="1" max="31" step="1"><label>日</label>
-    <input type="number" id="hh" min="0" max="23" step="1"><label>時</label>
-    <input type="number" id="mi" min="0" max="59" step="1"><label>分</label>
+    <label data-i18n="datetime">日時</label>
+    <select id="era"><option value="ad" data-i18n="ad">西暦</option><option value="bc" data-i18n="bce">紀元前</option></select>
+    <input type="number" id="yr" min="1" step="1"><label data-i18n="y">年</label>
+    <input type="number" id="mo" min="1" max="12" step="1"><label data-i18n="mo">月</label>
+    <input type="number" id="dy" min="1" max="31" step="1"><label data-i18n="d">日</label>
+    <input type="number" id="hh" min="0" max="23" step="1"><label data-i18n="h">時</label>
+    <input type="number" id="mi" min="0" max="59" step="1"><label data-i18n="mi">分</label>
   </div>
   <div class="row">
-    <button id="bNow">今</button>
-    <button id="bYday">昨日</button>
-    <button id="bM1h">−1時間</button>
-    <button id="bP1h">＋1時間</button>
-    <button id="bM10">−10分</button>
-    <button id="bP10">＋10分</button>
+    <button id="bNow" data-i18n="now">今</button>
+    <button id="bYday" data-i18n="yday">昨日</button>
+    <button id="bM1h" data-i18n="m1h">−1時間</button>
+    <button id="bP1h" data-i18n="p1h">＋1時間</button>
+    <button id="bM10" data-i18n="m10">−10分</button>
+    <button id="bP10" data-i18n="p10">＋10分</button>
     <button id="bPlay">▶ タイムプラス</button>
-    <label>速度 <input type="range" id="spd" min="1" max="4.5" step="0.5" value="1" style="width:110px;vertical-align:middle"> <span id="spdVal">×1.0</span></label>
+    <label><span data-i18n="speed">速度</span> <input type="range" id="spd" min="1" max="4.5" step="0.5" value="1" style="width:110px;vertical-align:middle"> <span id="spdVal">×1.0</span></label>
   </div>
   <div class="row">
-    <label>緯度</label><input type="number" id="lat" step="0.1" min="-89" max="89">
-    <label>経度</label><input type="number" id="lon" step="0.1" min="-180" max="180">
-    <select id="citysel"><option value="">エリア…</option></select>
-    <select id="citysel2"><option value="">場所…</option></select>
+    <label data-i18n="lat">緯度</label><input type="number" id="lat" step="0.1" min="-89" max="89">
+    <label data-i18n="lon">経度</label><input type="number" id="lon" step="0.1" min="-180" max="180">
+    <select id="citysel"><option value="" data-i18n="areaPh">エリア…</option></select>
+    <select id="citysel2"><option value="" data-i18n="placePh">場所…</option></select>
     <span id="cityname" style="color:#ffd166;font-size:13px"></span>
   </div>
   <div class="row">
-    <label>周辺</label><span id="nearby" style="font-size:12.5px;color:#9fb0d0">―</span>
+    <label data-i18n="nearby">周辺</label><span id="nearby" style="font-size:12.5px;color:#9fb0d0">―</span>
   </div>
   <div class="row">
-    <label>ハレー彗星</label>
-    <select id="halleySel"><option value="">（日付に連動：近日点の前後で自動表示）</option></select>
+    <label data-i18n="halley">ハレー彗星</label>
+    <select id="halleySel"><option value="" data-i18n="halleyPh">（日付に連動：近日点の前後で自動表示）</option></select>
   </div>
   <div class="row">
-    <label>主要な彗星</label>
-    <select id="cometSel"><option value="">選択すると、その彗星の近日点の10日前へ移動します</option></select>
+    <label data-i18n="comets">主要な彗星</label>
+    <select id="cometSel"><option value="" data-i18n="cometPh">選択すると、その彗星の近日点の10日前へ移動します</option></select>
   </div>
   <div class="row">
-    <label>客星（超新星）</label>
-    <select id="snSel"><option value="">選択すると、その超新星の極大の頃へ移動します</option></select>
+    <label data-i18n="guestStars">客星（超新星）</label>
+    <select id="snSel"><option value="" data-i18n="snPh">選択すると、その超新星の極大の頃へ移動します</option></select>
   </div>
   <div id="snBox" style="display:none;margin:2px 0 6px">
     <div id="snMeta" style="font-size:12.5px;color:#9fb0d0"></div>
     <div id="snInfo" style="white-space:pre-line;font-size:14px;line-height:1.5;color:#ffe9a8"></div>
   </div>
   <div class="row">
-    <label>視野</label><input type="range" id="fov" min="25" max="120" step="1">
+    <label data-i18n="fov">視野</label><input type="range" id="fov" min="25" max="120" step="1">
     <span id="fovVal" style="font-size:12px;color:#9fb0d0"></span>
-    <label class="chk"><input type="checkbox" id="cLines" checked> 星座線</label>
-    <label class="chk"><input type="checkbox" id="cMW" checked> 天の川</label>
-    <label class="chk">星の等級 <input type="range" id="magSel" min="1" max="8" step="0.5" value="8" style="width:110px;vertical-align:middle"> <span id="magVal">〜8等</span></label>
-    <label class="chk"><input type="checkbox" id="cNames" checked> 星の名前</label>
-    <label class="chk"><input type="checkbox" id="cPlanets" checked> 惑星・月・太陽</label>
-    <button id="bZenith">天頂を見る</button>
-    <button id="bFull">星空を全画面</button>
+    <label class="chk"><input type="checkbox" id="cLines" checked> <span data-i18n="cLines">星座線</span></label>
+    <label class="chk"><input type="checkbox" id="cMW" checked> <span data-i18n="cMW">天の川</span></label>
+    <label class="chk"><span data-i18n="magLimit">星の等級</span> <input type="range" id="magSel" min="1" max="8" step="0.5" value="8" style="width:110px;vertical-align:middle"> <span id="magVal">〜8等</span></label>
+    <label class="chk"><input type="checkbox" id="cNames" checked> <span data-i18n="cNames">星の名前</span></label>
+    <label class="chk"><input type="checkbox" id="cPlanets" checked> <span data-i18n="cPlanets">惑星・月・太陽</span></label>
+    <button id="bZenith" data-i18n="zenith">天頂を見る</button>
+    <button id="bFull" data-i18n="fullSky">星空を全画面</button>
   </div>
   <div id="readout"></div>
   <div id="note">空の部分をドラッグすると、見上げる方角（方位・高度）が動きます。ホイール／視野スライダで拡大・縮小。スマホ版では、空をタップしても全画面になります（戻るは右下のボタン）。時刻は日本時間（UTC+9）として入力します。暦は1582年10月15日以降がグレゴリオ暦、それ以前はユリウス暦で表示します（古代の文献の日付は、まずこの暦に直してから入れてください）。星は8等まで約41,000個（Hipparcos 系データ、等級スライダで表示上限を変更可能）、歳差を補正しているので古代でも配置が合います。惑星・月・太陽は Schlyter の簡易計算法（誤差1〜2分角、時代が離れると数分角〜）。ハレー彗星は出現ごとの近日点日（Catalog of Cometary Orbits / Yeomans）＋軌道要素を837年・1986年・2061年の公表値の間で内挿したもので、古代ほど誤差が大きく（数度まで）なります。古代は地球の自転の遅れ（ΔT）で数時間ずれる事があるので、文献の「日没時」「夜明け前」等の記述に合わせて時刻を前後させて合わせ込んでください。都市リストの遺跡・古代都市の位置は概略で、出典と照合済みの物以外には（仮）を付けています。「主要な彗星」は83個で、軌道要素はJPL SBDBの公表値、明るさは同データベースの絶対等級フィット（無い歴史的彗星は記録からの概算）です。周期彗星は収録した回帰の前後でのみ正しく、古代の彗星ほど位置の誤差が大きくなります。客星（歴史的超新星）は文献記録の8個を収録し、出現すると大きく光って極大に達し、その後はニッケル56とコバルト56の崩壊をポグソンの式で等級に直した形で、記録の期間をかけて衰えるよう再現しています（極大等級・期間は現代の推定です）。</div>
@@ -402,6 +402,9 @@ function jdToFields(){
 
 function infoString(){
   const cn = (document.getElementById('cityname').textContent || '').replace(/^≒ /, '');
+  if (LANG === 'en'){
+    return `${$('era').value === 'bc' ? 'BCE ' : ''}${$('yr').value}-${String($('mo').value).padStart(2, '0')}-${String($('dy').value).padStart(2, '0')} ${String($('hh').value).padStart(2, '0')}:${String($('mi').value).padStart(2, '0')}` + (cn ? `  ${cn}` : '');
+  }
   return `${$('era').value === 'bc' ? '紀元前' : ''}${$('yr').value}年${$('mo').value}月${$('dy').value}日 ${String($('hh').value).padStart(2, '0')}:${String($('mi').value).padStart(2, '0')}` + (cn ? `　${cn}` : '');
 }
 let fsInfoLast = '';
@@ -711,9 +714,93 @@ const GROUPS = [
  ['米州・アフリカ・オセアニア', [['アメリカ・ニューヨーク',40.7,-74.0],['アメリカ・ワシントン',38.9,-77.0],['アメリカ・ロサンゼルス',34.1,-118.2],['キューバ・ハバナ',23.1,-82.4],['メキシコ・メキシコシティ',19.4,-99.1],['ペルー・リマ',-12.0,-77.0],['ブラジル・サンパウロ',-23.6,-46.6],['アルゼンチン・ブエノスアイレス',-34.6,-58.4],['南アフリカ・ケープタウン',-33.9,18.4],['オーストラリア・シドニー',-33.9,151.2],['ニュージーランド・オークランド',-36.8,174.8]]],
 ];
 const CITIES = GROUPS.flatMap(g => g[1]);
+// ---------- 言語切り替え（日本語／英語、fina 要望 2026-11-27：Facebook・リンクシェル向け） ----------
+let LANG = 'ja';
+const LT = {
+  ja: {
+    fsBtn: '全画面', fsBack: '戻す', playGo: '▶ タイムプラス', playStop: '⏸ 止める',
+    provisional: '（仮）', placePh: '場所…', noPlaces: '登録地点なし（約300km圏内）', sep: '、',
+    km: km => ` 約${km}km`, magText: v => `〜${v}等`, magCapped: '〜6.9等（スマホ上限）',
+    dirs16: ['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西'],
+    dirs8: [['北',0],['北東',45],['東',90],['南東',135],['南',180],['南西',225],['西',270],['北西',315]],
+    readout: (az, dir, alt, lat, lon) => `視線の中心：方位 ${az}°（${dir}）・高度 ${alt}°　／　場所：緯度 ${lat}・経度 ${lon}　`,
+    moonAge: a => `月齢 約${a}　`, moonPos: (a, b) => `月：方位 ${a}°・高度 ${b}°　`,
+    eraYear: y => y > 0 ? `西暦${y}年` : `紀元前${1 - y}年`,
+    halleyOpt: (y, m, d) => (y > 0 ? `西暦${y}年` : `紀元前${1 - y}年`) + `の出現（近日点 ${m}月${d}日）`,
+    halleyName: 'ハレー彗星',
+    halleyExtra: (era, az, al, mag) => `ハレー彗星（${era}の出現）：方位 ${az}°・高度 ${al}°・推定 ${mag}等　`,
+    cometExtra: (n, az, al, mag, dist) => `${n}：方位 ${az}°・高度 ${al}°・推定 ${mag}等・地球から ${dist} AU　`,
+    guestStar: '客星',
+    snExtra: (n, mag, az, al) => `客星 ${n}：約${mag}等・方位 ${az}°・高度 ${al}°　`,
+    snMeta: (n, alt) => `観測地：${n}（南中高度 ${alt}°）`,
+  },
+  en: {
+    fsBtn: 'Fullscreen', fsBack: 'Back', playGo: '▶ Time Plus', playStop: '⏸ Stop',
+    provisional: ' (prov.)', placePh: 'Place…', noPlaces: 'No registered places within ~300 km', sep: ', ',
+    km: km => ` ~${km} km`, magText: v => `to mag ${v}`, magCapped: 'to mag 6.9 (mobile cap)',
+    dirs16: ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'],
+    dirs8: [['N',0],['NE',45],['E',90],['SE',135],['S',180],['SW',225],['W',270],['NW',315]],
+    readout: (az, dir, alt, lat, lon) => `Center: azimuth ${az}° (${dir}), altitude ${alt}°  /  Place: latitude ${lat}, longitude ${lon}  `,
+    moonAge: a => `Moon age ${a}  `, moonPos: (a, b) => `Moon: az ${a}°, alt ${b}°  `,
+    eraYear: y => y > 0 ? `${y}` : `BCE ${1 - y}`,
+    halleyOpt: (y, m, d) => `${y > 0 ? y : 'BCE ' + (1 - y)} apparition (perihelion ${m}/${d})`,
+    halleyName: "Halley's Comet",
+    halleyExtra: (era, az, al, mag) => `Halley's Comet (apparition of ${era}): az ${az}°, alt ${al}°, est. mag ${mag}  `,
+    cometExtra: (n, az, al, mag, dist) => `${n}: az ${az}°, alt ${al}°, est. mag ${mag}, ${dist} AU from Earth  `,
+    guestStar: 'Guest star',
+    snExtra: (n, mag, az, al) => `Guest star ${n}: about mag ${mag}, az ${az}°, alt ${al}°  `,
+    snMeta: (n, alt) => `Best viewed from: ${n} (culmination altitude ${alt}°)`,
+  },
+};
+let T = LT.ja;
+const I18N_EN = {"ttl": "Night Sky Viewer — Recreating the Skies of Ancient Texts", "modePC": "PC", "modeMobile": "Mobile", "help": "Help", "back": "Back", "shot": "Photo", "speed": "Speed", "fov": "Field of view", "mag": "Magnitude", "datetime": "Date & time", "ad": "CE", "bce": "BCE", "y": "y", "mo": "mo", "d": "d", "h": "h", "mi": "min", "now": "Now", "yday": "Yesterday", "m1h": "−1h", "p1h": "+1h", "m10": "−10m", "p10": "+10m", "lat": "Latitude", "lon": "Longitude", "areaPh": "Area…", "placePh": "Place…", "nearby": "Nearby", "halley": "Halley's Comet", "halleyPh": "(Linked to the date: appears automatically around perihelion)", "comets": "Major comets", "cometPh": "Select to jump to 10 days before perihelion", "guestStars": "Guest stars (supernovae)", "snPh": "Select to jump to around maximum light", "cLines": "Constellation lines", "cMW": "Milky Way", "magLimit": "Star magnitude", "cNames": "Star names", "cPlanets": "Planets, Moon & Sun", "zenith": "Look at zenith", "fullSky": "Fullscreen sky"};
+const GROUP_EN = {"日本": "Japan", "東アジア": "East Asia", "中国・長安（西安）周辺": "China — Chang'an (Xi'an) area", "中国・洛陽周辺": "China — Luoyang area", "中国・北京周辺": "China — Beijing area", "中国・南京周辺": "China — Nanjing area", "中国・その他": "China — Other", "インド・デリー周辺": "India — Delhi area", "インド・その他": "India — Other", "東南アジア": "Southeast Asia", "中東・バグダッド周辺": "Middle East — Baghdad area", "中東・ダマスカス周辺": "Middle East — Damascus area", "中東・エルサレム周辺": "Middle East — Jerusalem area", "中東・カイロ周辺": "Middle East — Cairo area", "中東・イスタンブール周辺": "Middle East — Istanbul area", "中東・テヘラン周辺": "Middle East — Tehran area", "中東・アラビア": "Middle East — Arabia", "欧州・ローマ周辺": "Europe — Rome area", "欧州・ギリシャ周辺": "Europe — Greece area", "欧州・パリ周辺": "Europe — Paris area", "欧州・ロンドン周辺": "Europe — London area", "欧州・その他": "Europe — Other", "米州・アフリカ・オセアニア": "Americas, Africa & Oceania"};
+const CITY_EN = {"京都市": "Kyoto", "奈良市": "Nara", "大阪市": "Osaka", "東京": "Tokyo", "鎌倉市": "Kamakura", "福岡市": "Fukuoka", "長崎市": "Nagasaki", "札幌市": "Sapporo", "那覇市": "Naha", "韓国・ソウル": "Seoul, Korea", "台湾・台北市": "Taipei, Taiwan", "モンゴル・ウランバートル": "Ulaanbaatar, Mongolia", "西安市（長安）": "Xi'an (Chang'an)", "咸陽市": "Xianyang", "宝鶏市": "Baoji", "洛陽市": "Luoyang", "登封・観星台": "Dengfeng Observatory", "鄭州市": "Zhengzhou", "開封市": "Kaifeng", "安陽市（殷墟）": "Anyang (Yinxu)", "北京市": "Beijing", "天津市": "Tianjin", "南京市": "Nanjing", "揚州市": "Yangzhou", "蘇州市": "Suzhou", "杭州市": "Hangzhou", "紹興市": "Shaoxing", "上海市": "Shanghai", "長沙市（馬王堆）": "Changsha (Mawangdui)", "武漢市": "Wuhan", "成都市": "Chengdu", "広州市": "Guangzhou", "敦煌": "Dunhuang", "トルファン": "Turfan", "カシュガル": "Kashgar", "ラサ": "Lhasa", "デリー": "Delhi", "アーグラ": "Agra", "マトゥラー": "Mathura", "ジャイプル（天文台）": "Jaipur (observatory)", "ウッジャイン": "Ujjain", "ムンバイ": "Mumbai", "バラナシ": "Varanasi", "パトナ（パータリプトラ）": "Patna (Pataliputra)", "ナーランダー遺跡": "Nalanda Ruins", "コルカタ": "Kolkata", "チェンナイ": "Chennai", "ベンガルール": "Bengaluru", "パキスタン・カラチ": "Karachi, Pakistan", "タイ・バンコク": "Bangkok, Thailand", "ベトナム・ハノイ": "Hanoi, Vietnam", "フィリピン・マニラ": "Manila, Philippines", "シンガポール": "Singapore", "インドネシア・ジャカルタ": "Jakarta, Indonesia", "イラク・バグダッド": "Baghdad, Iraq", "バビロン遺跡": "Babylon Ruins", "クテシフォン遺跡": "Ctesiphon Ruins", "ニップル遺跡": "Nippur Ruins", "ウルク遺跡": "Uruk Ruins", "ウル遺跡": "Ur Ruins", "ニネヴェ遺跡（モスル）": "Nineveh Ruins (Mosul)", "アッシュール遺跡": "Assur Ruins", "シリア・ダマスカス": "Damascus, Syria", "シリア・アレッポ": "Aleppo, Syria", "パルミラ遺跡": "Palmyra Ruins", "レバノン・ビブロス": "Byblos, Lebanon", "レバノン・シドン": "Sidon, Lebanon", "レバノン・ティルス": "Tyre, Lebanon", "エルサレム": "Jerusalem", "ベツレヘム": "Bethlehem", "エリコ": "Jericho", "ペトラ遺跡": "Petra Ruins", "エジプト・カイロ": "Cairo, Egypt", "エジプト・ギザ": "Giza, Egypt", "メンフィス遺跡": "Memphis Ruins", "エジプト・アレクサンドリア": "Alexandria, Egypt", "ルクソール（テーベ）": "Luxor (Thebes)", "トルコ・イスタンブール": "Istanbul, Türkiye", "トルコ・アンカラ": "Ankara, Türkiye", "トロイ遺跡": "Troy Ruins", "エフェソス遺跡": "Ephesus Ruins", "ペルガモン遺跡": "Pergamon Ruins", "ハットゥシャ遺跡": "Hattusha Ruins", "イラン・テヘラン": "Tehran, Iran", "イラン・イスファハン": "Isfahan, Iran", "ペルセポリス遺跡": "Persepolis Ruins", "スーサ遺跡": "Susa Ruins", "ハマダン（エクバタナ）": "Hamadan (Ecbatana)", "サウジアラビア・リヤド": "Riyadh, Saudi Arabia", "メッカ": "Mecca", "メディナ": "Medina", "イエメン・サヌア": "Sanaa, Yemen", "イタリア・ローマ市": "Rome, Italy", "イタリア・ナポリ": "Naples, Italy", "ポンペイ遺跡": "Pompeii Ruins", "イタリア・フィレンツェ": "Florence, Italy", "イタリア・ピサ": "Pisa, Italy", "ギリシャ・アテネ": "Athens, Greece", "デルフィ遺跡": "Delphi Ruins", "コリントス遺跡": "Corinth Ruins", "ミケーネ遺跡": "Mycenae Ruins", "スパルタ": "Sparta", "オリンピア遺跡": "Olympia Ruins", "クノッソス遺跡": "Knossos Ruins", "フランス・パリ": "Paris, France", "フランス・シャルトル": "Chartres, France", "フランス・ルーアン": "Rouen, France", "イギリス・ロンドン": "London, UK", "ストーンヘンジ": "Stonehenge", "イギリス・オックスフォード": "Oxford, UK", "イギリス・ケンブリッジ": "Cambridge, UK", "スペイン・マドリード": "Madrid, Spain", "ポルトガル・リスボン": "Lisbon, Portugal", "ドイツ・ベルリン": "Berlin, Germany", "オーストリア・ウィーン": "Vienna, Austria", "チェコ・プラハ": "Prague, Czechia", "ポーランド・ワルシャワ": "Warsaw, Poland", "デンマーク・コペンハーゲン": "Copenhagen, Denmark", "オランダ・アムステルダム": "Amsterdam, Netherlands", "アイルランド・ダブリン": "Dublin, Ireland", "スウェーデン・ストックホルム": "Stockholm, Sweden", "アイスランド・レイキャビク": "Reykjavik, Iceland", "ロシア・モスクワ": "Moscow, Russia", "ウクライナ・キーウ": "Kyiv, Ukraine", "アメリカ・ニューヨーク": "New York, USA", "アメリカ・ワシントン": "Washington, USA", "アメリカ・ロサンゼルス": "Los Angeles, USA", "キューバ・ハバナ": "Havana, Cuba", "メキシコ・メキシコシティ": "Mexico City, Mexico", "ペルー・リマ": "Lima, Peru", "ブラジル・サンパウロ": "São Paulo, Brazil", "アルゼンチン・ブエノスアイレス": "Buenos Aires, Argentina", "南アフリカ・ケープタウン": "Cape Town, South Africa", "オーストラリア・シドニー": "Sydney, Australia", "ニュージーランド・オークランド": "Auckland, New Zealand"};
+const COMET_EN = {"紀元前44年 カエサルの彗星": "Caesar's Comet (44 BCE)", "1556年 大彗星": "Great Comet of 1556", "1577年 大彗星（ティコ）": "Great Comet of 1577 (Tycho)", "1680年 大彗星（キルヒ）": "Great Comet of 1680 (Kirch)", "1744年 大彗星（シェゾー）": "Great Comet of 1744 (Chéseaux)", "1769年 大彗星（メシエ）": "Great Comet of 1769 (Messier)", "1807年 大彗星": "Great Comet of 1807", "1811年 大彗星": "Great Comet of 1811", "1843年 大彗星": "Great Comet of 1843", "1858年 ドナティ彗星": "Comet Donati (1858)", "1861年 サッチャー彗星": "Comet Thatcher (1861)", "1861年 テバット彗星": "Comet Tebbutt (1861)", "1880年 大南彗星": "Great Southern Comet of 1880", "1882年 大彗星": "Great Comet of 1882", "1901年 大彗星": "Great Comet of 1901", "1910年 大彗星（1月）": "Great January Comet of 1910", "1927年 シュジェルップ・マリスタニー彗星": "Comet Skjellerup–Maristany (1927)", "1947年 南天彗星": "Southern Comet of 1947", "1948年 日食彗星": "Eclipse Comet of 1948", "1957年 アラン・ローラン彗星": "Comet Arend–Roland (1957)", "1957年 ムルコス彗星": "Comet Mrkos (1957)", "1962年 ヒューメイソン彗星": "Comet Humason (1962)", "1962年 関・ラインズ彗星": "Comet Seki–Lines (1962)", "1963年 ペレイラ彗星": "Comet Pereyra (1963)", "1965年 池谷・関彗星": "Comet Ikeya–Seki (1965)", "1969年 田子・佐藤・小坂彗星": "Comet Tago–Sato–Kosaka (1969)", "1970年 ベネット彗星": "Comet Bennett (1970)", "1970年 ホワイト・オルティス・ボレリー彗星": "Comet White–Ortiz–Bolelli (1970)", "1973年 コホーテク彗星": "Comet Kohoutek (1973)", "1976年 ウェスト彗星": "Comet West (1976)", "1983年 IRAS・荒木・オールコック彗星": "Comet IRAS–Araki–Alcock (1983)", "1990年 オースチン彗星": "Comet Austin (1990)", "1990年 レビー彗星": "Comet Levy (1990)", "1997年 ヘール・ボップ彗星": "Comet Hale–Bopp (1997)", "1996年 百武彗星": "Comet Hyakutake (1996)", "2004年 ニート彗星": "Comet NEAT (2004)", "2004年 リニア彗星": "Comet LINEAR (2004)", "2005年 マックホルツ彗星": "Comet Machholz (2005)", "2006年 ポイマンスキ彗星": "Comet Pojmanski (2006)", "2006年 スワン彗星": "Comet SWAN (2006)", "2007年 マックノート彗星": "Comet McNaught (2007)", "2009年 ルーリン彗星": "Comet Lulin (2009)", "2011年 ギャラッド彗星": "Comet Garradd (2011)", "2010年 マックノート彗星": "Comet McNaught (2010)", "2013年 パンスターズ彗星": "Comet PanSTARRS (2013)", "2011年 ラブジョイ彗星": "Comet Lovejoy (2011)", "2013年 アイソン彗星": "Comet ISON (2013)", "2014年 サイディング・スプリング彗星": "Comet Siding Spring (2014)", "2013年 ラブジョイ彗星": "Comet Lovejoy (2013)", "2015年 ラブジョイ彗星": "Comet Lovejoy (2015)", "2017年 パンスターズ彗星": "Comet PanSTARRS (2017)", "2017年 ジョンソン彗星": "Comet Johnson (2017)", "2022年 パンスターズ彗星": "Comet PanSTARRS (2022)", "2019年 岩本彗星": "Comet Iwamoto (2019)", "2020年 アトラス彗星": "Comet ATLAS (2020)", "2020年 ネオワイズ彗星": "Comet NEOWISE (2020)", "2020年 スワン彗星": "Comet SWAN (2020)", "2022年 レナード彗星": "Comet Leonard (2022)", "2023年 ZTF彗星": "Comet ZTF (2023)", "2024年 紫金山・アトラス彗星": "Comet Tsuchinshan–ATLAS (2024)", "2023年 西村彗星": "Comet Nishimura (2023)", "2025年 アトラス彗星": "Comet ATLAS (2025)", "2024年 アトラス彗星": "Comet ATLAS (2024)", "2023年 エンケ彗星": "Comet Encke (2023)", "2008年 タットル彗星": "Comet Tuttle (2008)", "2016年 テンペル第1彗星": "Comet Tempel 1 (2016)", "2024年 ポンス・ブルックス彗星": "Comet Pons–Brooks (2024)", "2024年 オルバース彗星": "Comet Olbers (2024)", "2014年 ホームズ彗星": "Comet Holmes (2014)", "2018年 ジャコビニ・ツィナー彗星": "Comet Giacobini–Zinner (2018)", "2011年 クロムリン彗星": "Comet Crommelin (2011)", "2019年 シュワスマン・ワハマン第1彗星": "Comet Schwassmann–Wachmann 1 (2019)", "2018年 ステファン・オテルマ彗星": "Comet Stephan–Oterma (2018)", "2016年 本田・ムルコス・パジュサコバ彗星": "Comet Honda–Mrkos–Pajdušáková (2016)", "2018年 ワータネン彗星": "Comet Wirtanen (2018)", "1998年 テンペル・タットル彗星": "Comet Tempel–Tuttle (1998)", "2015年 チュリュモフ・ゲラシメンコ彗星": "Comet Churyumov–Gerasimenko (2015)", "2022年 ビルト第2彗星": "Comet Wild 2 (2022)", "2017年 ハートレー第2彗星": "Comet Hartley 2 (2017)", "1992年 スイフト・タットル彗星": "Comet Swift–Tuttle (1992)", "2002年 池谷・張彗星": "Comet Ikeya–Zhang (2002)", "2019年 ボリソフ彗星（星間天体）": "Comet Borisov (2019, interstellar)"};
+const SN_EN = {"SN 185（後漢書）": "SN 185 (Book of the Later Han)", "SN 386（宋書）": "SN 386 (Book of Song)", "SN 393（宋書）": "SN 393 (Book of Song)", "SN 1006": "SN 1006", "SN 1054（かに星雲）": "SN 1054 (Crab Nebula)", "SN 1181（明月記・吾妻鏡）": "SN 1181 (Meigetsuki / Azuma Kagami)", "SN 1572（ティコ）": "SN 1572 (Tycho)", "SN 1604（ケプラー）": "SN 1604 (Kepler)"};
+const SNDESC_EN = [["The oldest supernova record in human history, preserved in the Book of the Later Han", "It was well seen near the equator and in the southern hemisphere"], ["A guest star in the Southern Dipper (Sagittarius), recorded in the Book of Song", "Peak about magnitude 1.5, visible for about three months"], ["A guest star in the Scorpion's tail, recorded in the Book of Song", "Visible about eight months, peaking at magnitude −3"], ["The brightest recorded guest star, appearing in Lupus", "Recorded around the world in the year 1006"], ["The great guest star in Taurus that created the Crab Nebula", "Seen for 23 days in daylight and 653 nights"], ["A great guest star recorded in the Meigetsuki and Azuma Kagami", "The records say it was visible for 185 days"], ["The star Tycho observed and called a new star", "Peaking at magnitude −4, rivalling Venus"], ["The guest star in Ophiuchus that Kepler saw", "The last supernova observed in our own galaxy"]];
+const BODY_EN = { '太陽': 'Sun', '月': 'Moon', '水星': 'Mercury', '金星': 'Venus', '火星': 'Mars', '木星': 'Jupiter', '土星': 'Saturn' };
+const NOTE_JA = document.getElementById('note').textContent;
+const NOTE_EN = "Drag on the sky to change the direction you are looking toward (azimuth and altitude). Use the mouse wheel or the field-of-view slider to zoom. In the mobile layout, tapping the sky also enters fullscreen (use the button at bottom right to go back). Times are entered as Japan time (UTC+9). Dates on or after 15 October 1582 use the Gregorian calendar; earlier dates use the Julian calendar — convert the date in an ancient text to this calendar first, then enter it. About 41,000 stars down to magnitude 8 (Hipparcos-based data; the magnitude slider sets the display limit), with precession corrected, so the arrangement matches even in ancient times. Planets, the Moon and the Sun use Schlyter's simplified method (error about 1–2 arcminutes, growing to several arcminutes for distant eras). Halley's Comet uses each apparition's perihelion date (Catalog of Cometary Orbits / Yeomans), with orbital elements interpolated between the published values for 837, 1986 and 2061; errors grow for ancient times (up to several degrees). In ancient times the Earth's rotation lag (ΔT) can shift things by hours, so adjust the time to match descriptions in the texts, such as “at sunset” or “before dawn”. Positions of ruins and ancient cities in the city list are approximate; entries not verified against sources are marked (prov.). The 83 major comets use orbital elements published by JPL SBDB, with brightness from that database's absolute-magnitude fits (historical comets without one are estimated from records). Periodic comets are accurate only around their recorded returns, and positional errors grow for ancient comets. The eight recorded guest stars (historical supernovae) brighten to their maximum when they appear, then fade over their recorded period, with the decay of nickel-56 and cobalt-56 converted to magnitudes by Pogson's formula (peak magnitudes and durations are modern estimates).";
+function tn(name){ return LANG === 'en' ? (CITY_EN[name] || name) : name; }
+function gname(gi){ return LANG === 'en' ? (GROUP_EN[GROUPS[gi][0]] || GROUPS[gi][0]) : GROUPS[gi][0]; }
+function cname(c){ return LANG === 'en' ? (COMET_EN[c[1]] || c[0]) : c[1]; }
+function snName(n){ return LANG === 'en' ? (SN_EN[n] || n) : n; }
+function snShort(n){ return LANG === 'en' ? (SN_EN[n] || n).split(' (')[0] : n.split('（')[0]; }
+function bodyName(n){ return LANG === 'en' ? (BODY_EN[n] || n) : n; }
+let snShown = null, snBest = null;
+function applyLang(l){
+  LANG = l; T = LT[l];
+  try { localStorage.setItem('skyLang', l); } catch(e) {}
+  document.title = l === 'en' ? 'Night Sky Viewer — Recreating the Skies of Ancient Texts' : '古代文献の再現も出来る夜空ビューア';
+  $('bLang').textContent = l === 'en' ? '日本語' : 'EN';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    if (el.dataset.ja === undefined) el.dataset.ja = el.textContent;
+    el.textContent = l === 'en' ? (I18N_EN[el.dataset.i18n] !== undefined ? I18N_EN[el.dataset.i18n] : el.dataset.ja) : el.dataset.ja;
+  });
+  $('note').textContent = l === 'en' ? NOTE_EN : NOTE_JA;
+  [...$('citysel').options].forEach(o => { if (o.value !== '') o.textContent = gname(+o.value); });
+  if ($('citysel').value !== '') [...$('citysel2').options].forEach(o => { if (o.value !== '') o.textContent = siteLabel(GROUPS[+$('citysel').value][1][+o.value][0]); });
+  [...$('halleySel').options].forEach(o => { if (o.value){ const [y, m, d] = o.value.split(',').map(Number); o.textContent = T.halleyOpt(y, m, d); } });
+  [...$('cometSel').options].forEach(o => { if (o.value !== '') o.textContent = cname(COMETS[+o.value]); });
+  [...$('snSel').options].forEach(o => { if (o.value !== '') o.textContent = snName(SNE[+o.value][0]); });
+  $('bFs').textContent = $('wrap').classList.contains('m-fullpc') ? T.fsBack : T.fsBtn;
+  $('bPlay').textContent = playTimer ? T.playStop : T.playGo;
+  updateMagLabel();
+  $('magPcVal').textContent = T.magText($('magSel').value);
+  fsInfoLast = ''; updateFsInfo();
+  nearbyKey = ''; updateNearby();
+  if (snShown !== null && snBest){
+    $('snMeta').textContent = T.snMeta(tn(snBest.name), snBest.alt.toFixed(0));
+    $('snInfo').textContent = (LANG === 'en' ? SNDESC_EN[snShown] : SNDESC[snShown]).join('\n');
+  }
+  draw();
+}
+$('bLang').onclick = () => applyLang(LANG === 'en' ? 'ja' : 'en');
+
 const VERIFIED_SITES = ['トロイ遺跡','スーサ遺跡','登封・観星台','安陽市（殷墟）','ウル遺跡','メンフィス遺跡','エジプト・ギザ','ポンペイ遺跡'];
 const SITE_RE = /遺跡|観星台|ストーンヘンジ/;
-function siteLabel(name){ return name + (SITE_RE.test(name) && !VERIFIED_SITES.includes(name) ? '（仮）' : ''); }
+function siteLabel(name){ return tn(name) + (SITE_RE.test(name) && !VERIFIED_SITES.includes(name) ? T.provisional : ''); }
 function nearestCity(lat, lon){
   let best = null, bd = 1.2; // 約130km以内
   for (const c of CITIES){
@@ -905,7 +992,7 @@ function drawMoon(mp, sp, lst){
   ctx.restore();
   ctx.font = '600 11.5px sans-serif'; ctx.textAlign = 'left';
   ctx.fillStyle = '#ffe9a8';
-  ctx.fillText('月', p[0] + rPx + 3, p[1] + 3);
+  ctx.fillText(bodyName('月'), p[0] + rPx + 3, p[1] + 3);
   return [az, al];
 }
 function draw(){
@@ -928,7 +1015,7 @@ function draw(){
     ctx.fillStyle = 'rgba(6,10,20,0.55)'; ctx.fill();
   }
   ctx.font = '600 13px sans-serif'; ctx.textAlign = 'center';
-  [['北',0],['北東',45],['東',90],['南東',135],['南',180],['南西',225],['西',270],['北西',315]].forEach(([t, az]) => {
+  T.dirs8.forEach(([t, az]) => {
     const p = project(az, 1.5); if (!p) return;
     if (p[0] < -20 || p[0] > W + 20 || p[1] < -20 || p[1] > H + 20) return;
     ctx.fillStyle = '#8fb0ff'; ctx.fillText(t, p[0], p[1]);
@@ -1161,15 +1248,15 @@ function draw(){
       return [az, al];
     };
     const sp = planetRaDec('sun', d, sun, els);
-    drawBody(sp.ra, sp.dec, '#ffd94d', 5, '太陽');
+    drawBody(sp.ra, sp.dec, '#ffd94d', 5, bodyName('太陽'));
     const mp = planetRaDec('moon', d, sun, els);
     const mpos = drawMoon(mp, sp, lst);
     const age = ((state.jd - 2451550.1) % 29.53059 + 29.53059) % 29.53059;
-    extra += `月齢 約${age.toFixed(1)}　`;
-    if (mpos) extra += `月：方位 ${mpos[0].toFixed(0)}°・高度 ${mpos[1].toFixed(0)}°　`;
+    extra += T.moonAge(age.toFixed(1));
+    if (mpos) extra += T.moonPos(mpos[0].toFixed(0), mpos[1].toFixed(0));
     for (const [key, label, color, radius] of PLANETS){
       const pp = planetRaDec(key, d, sun, els);
-      drawBody(pp.ra, pp.dec, color, radius, label);
+      drawBody(pp.ra, pp.dec, color, radius, bodyName(label));
     }
   }
   const hp = state.comet ? null : halleyPos(state.jd, sun);
@@ -1189,8 +1276,8 @@ function draw(){
         ctx.beginPath(); ctx.arc(p[0], p[1], Math.max(2.2, glowR*0.22), 0, 7); ctx.fill();
         ctx.font = '600 11.5px sans-serif'; ctx.textAlign = 'left';
         ctx.fillStyle = '#cfe4ff';
-        ctx.fillText('ハレー彗星', p[0] + glowR + 2, p[1] + 3);
-        extra += `ハレー彗星（${hp.year > 0 ? '西暦' + hp.year + '年' : '紀元前' + (1 - hp.year) + '年'}の出現）：方位 ${az.toFixed(0)}°・高度 ${al.toFixed(0)}°・推定 ${hp.mag.toFixed(1)}等　`;
+        ctx.fillText(T.halleyName, p[0] + glowR + 2, p[1] + 3);
+        extra += T.halleyExtra(T.eraYear(hp.year), az.toFixed(0), al.toFixed(0), hp.mag.toFixed(1));
       }
     }
   }
@@ -1212,8 +1299,8 @@ function draw(){
           ctx.beginPath(); ctx.arc(p[0], p[1], Math.max(2.2, glowR*0.22), 0, 7); ctx.fill();
           ctx.font = '600 11.5px sans-serif'; ctx.textAlign = 'left';
           ctx.fillStyle = '#cfe4ff';
-          ctx.fillText(state.comet[1], p[0] + glowR + 2, p[1] + 3);
-          extra += `${state.comet[1]}：方位 ${az.toFixed(0)}°・高度 ${al.toFixed(0)}°・推定 ${cp2.mag.toFixed(1)}等・地球から ${cp2.dist.toFixed(2)} AU　`;
+          ctx.fillText(cname(state.comet), p[0] + glowR + 2, p[1] + 3);
+          extra += T.cometExtra(cname(state.comet), az.toFixed(0), al.toFixed(0), cp2.mag.toFixed(1), cp2.dist.toFixed(2));
         }
       }
     }
@@ -1250,16 +1337,16 @@ function draw(){
     ctx.restore();
     ctx.font = '600 11.5px sans-serif'; ctx.textAlign = 'left';
     ctx.fillStyle = '#ffe9a8';
-    ctx.fillText('客星 ' + sn[0].split('（')[0], p[0] + r + 3, p[1] + 3);
-    extra += `客星 ${sn[0].split('（')[0]}：約${mag.toFixed(1)}等・方位 ${az.toFixed(0)}°・高度 ${al.toFixed(0)}°　`;
+    ctx.fillText(T.guestStar + ' ' + snShort(sn[0]), p[0] + r + 3, p[1] + 3);
+    extra += T.snExtra(snShort(sn[0]), mag.toFixed(1), az.toFixed(0), al.toFixed(0));
   }
-  const azTxt = ['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西'][Math.round(state.az/22.5) % 16];
+  const azTxt = T.dirs16[Math.round(state.az/22.5) % 16];
   const cn = nearestCity(state.lat, state.lon);
-  const cnTxt = cn ? '≒ ' + cn : '';
+  const cnTxt = cn ? '≒ ' + tn(cn) : '';
   if (document.getElementById('cityname').textContent !== cnTxt) document.getElementById('cityname').textContent = cnTxt;
   updateNearby();
   // 月齢・天体の情報も同じ行に続け、表示行を1行に収める（fina 指示 2026-11-24：縦を1行減らす）
-  const roTxt = `視線の中心：方位 ${state.az.toFixed(0)}°（${azTxt}）・高度 ${state.alt.toFixed(0)}°　／　場所：緯度 ${state.lat.toFixed(1)}・経度 ${state.lon.toFixed(1)}　` + extra;
+  const roTxt = T.readout(state.az.toFixed(0), azTxt, state.alt.toFixed(0), state.lat.toFixed(1), state.lon.toFixed(1)) + extra;
   if (roTxt !== readoutLast){ readoutLast = roTxt; $('readout').textContent = roTxt; }
   updateFsInfo();
 }
@@ -1303,7 +1390,7 @@ function setPlay(on){
     clearInterval(playTimer); playTimer = null;
   }
   $('wrap').classList.toggle('glplay', !!playTimer && glOK);
-  $('bPlay').textContent = playTimer ? '⏸ 止める' : '▶ タイムプラス';
+  $('bPlay').textContent = playTimer ? T.playStop : T.playGo;
   $('bFsPlay').textContent = playTimer ? '⏸' : '▶';
   $('bPcPlay').textContent = playTimer ? '⏸' : '▶';
   if (!on) draw(); // 止めたら重ねキャンバスが隠れるので、通常描画で描き直す
@@ -1355,12 +1442,12 @@ $('spdFs').oninput = e => setSpeed(parseFloat(e.target.value));
 $('spdPc').oninput = e => setSpeed(parseFloat(e.target.value));
 // PC全画面バーの視野・等級スライダー：本体側のスライダーと同じ状態を共有する
 $('fovPc').addEventListener('input', e => { state.fov = +e.target.value; $('fov').value = state.fov; $('fovVal').textContent = state.fov + '°'; $('fovPcVal').textContent = state.fov + '°'; drawSoon(); });
-$('magPc').oninput = e => { $('magSel').value = e.target.value; $('magPcVal').textContent = '〜' + e.target.value + '等'; updateMagLabel(); drawSoon(); };
+$('magPc').oninput = e => { $('magSel').value = e.target.value; $('magPcVal').textContent = T.magText(e.target.value); updateMagLabel(); drawSoon(); };
 $('lat').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)){ state.lat = Math.max(-89, Math.min(89, v)); syncPlaceSelects(); draw(); } });
 $('lon').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)){ state.lon = Math.max(-180, Math.min(180, v)); syncPlaceSelects(); draw(); } });
 function fillPlaces(gi){
   const sel2 = $('citysel2');
-  sel2.innerHTML = '<option value="">場所…</option>';
+  sel2.innerHTML = '<option value="">' + T.placePh + '</option>';
   if (gi === '' || gi === null || gi === undefined) return;
   GROUPS[+gi][1].forEach((c, i) => { const o = document.createElement('option'); o.value = i;
     o.textContent = siteLabel(c[0]); sel2.appendChild(o); });
@@ -1388,7 +1475,7 @@ function gotoPlace(gi, ci){
   syncPlaceSelects(); draw();
 }
 { const sel = $('citysel'), sel2 = $('citysel2');
-  GROUPS.forEach((g, i) => { const o = document.createElement('option'); o.value = i; o.textContent = g[0]; sel.appendChild(o); });
+  GROUPS.forEach((g, i) => { const o = document.createElement('option'); o.value = i; o.textContent = gname(i); sel.appendChild(o); });
   sel.onchange = () => fillPlaces(sel.value);
   sel2.onchange = () => { if (sel.value === '' || sel2.value === '') return; gotoPlace(+sel.value, +sel2.value); };
 }
@@ -1405,11 +1492,11 @@ function updateNearby(){
   list.sort((a, b) => a.km - b.km);
   const el = $('nearby');
   el.innerHTML = '';
-  if (!list.length){ el.textContent = '登録地点なし（約300km圏内）'; return; }
+  if (!list.length){ el.textContent = T.noPlaces; return; }
   list.slice(0, 8).forEach((it, ix) => {
-    if (ix) el.appendChild(document.createTextNode('、'));
+    if (ix) el.appendChild(document.createTextNode(T.sep));
     const s = document.createElement('span');
-    s.textContent = siteLabel(it.name) + ' 約' + it.km + 'km';
+    s.textContent = siteLabel(it.name) + T.km(it.km);
     s.style.cssText = 'cursor:pointer;text-decoration:underline dotted';
     s.onclick = () => gotoPlace(it.gi, it.ci);
     el.appendChild(s);
@@ -1421,13 +1508,13 @@ $('cLines').onchange = draw;
 function updateMagLabel(){
   const v = parseFloat($('magSel').value);
   const capped = $('wrap').classList.contains('m-mobile') && v > 6.9;
-  $('magVal').textContent = capped ? '〜6.9等（スマホ上限）' : '〜' + $('magSel').value + '等';
+  $('magVal').textContent = capped ? T.magCapped : T.magText($('magSel').value);
 }
 $('magSel').oninput = () => { updateMagLabel(); drawSoon(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw;
 function setMode(m){
   const w = $('wrap');
   w.classList.remove('m-mobile', 'm-hd', 'm-4k', 'm-full', 'm-fullpc'); // モード切替時は全画面も必ず解除する（fina 報告 2026-11-24）
-  $('bFs').textContent = '全画面';
+  $('bFs').textContent = T.fsBtn;
   w.classList.add(m === 'mobile' ? 'm-mobile' : m === 'hd' ? 'm-hd' : 'm-4k');
   $('bModePC').style.display = m === 'mobile' ? '' : 'none';
   $('bModeMobile').style.display = m === 'mobile' ? 'none' : '';
@@ -1447,19 +1534,19 @@ $('bHelp').onclick = () => { $('note').classList.toggle('open'); resize(); };
 // ブラウザ内全画面（PC版のみ、fina 指定 2026-11-27）：タイトル段は残し、空を窓いっぱいにする。もう一度押すか、戻るボタンか Esc で復帰
 $('bFs').onclick = () => {
   const on = $('wrap').classList.toggle('m-fullpc');
-  $('bFs').textContent = on ? '戻す' : '全画面';
+  $('bFs').textContent = on ? T.fsBack : T.fsBtn;
   if (on){ // 入る時に全画面バーのスライダーを現在の値へ同期する
     $('fovPc').value = state.fov; $('fovPcVal').textContent = state.fov + '°';
-    $('magPc').value = $('magSel').value; $('magPcVal').textContent = '〜' + $('magSel').value + '等';
+    $('magPc').value = $('magSel').value; $('magPcVal').textContent = T.magText($('magSel').value);
     setSpeed(state.speed);
   }
   resize();
 };
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && $('wrap').classList.contains('m-fullpc')){ $('wrap').classList.remove('m-fullpc'); $('bFs').textContent = '全画面'; resize(); }
+  if (e.key === 'Escape' && $('wrap').classList.contains('m-fullpc')){ $('wrap').classList.remove('m-fullpc'); $('bFs').textContent = T.fsBtn; resize(); }
 });
 $('bFull').onclick = () => { $('wrap').classList.add('m-full'); resize(); };
-$('bBack').onclick = () => { $('wrap').classList.remove('m-full', 'm-fullpc'); $('bFs').textContent = '全画面'; resize(); };
+$('bBack').onclick = () => { $('wrap').classList.remove('m-full', 'm-fullpc'); $('bFs').textContent = T.fsBtn; resize(); };
 $('bZenith').onclick = () => { state.alt = 90; draw(); };
 // ハレー彗星セレクト
 {
@@ -1467,7 +1554,7 @@ $('bZenith').onclick = () => { state.alt = 90; draw(); };
   for (const [y, m, dd] of HALLEY_TP){
     const o = document.createElement('option');
     o.value = [y, m, dd].join(',');
-    o.textContent = (y > 0 ? `西暦${y}年` : `紀元前${1 - y}年`) + `の出現（近日点 ${m}月${dd}日）`;
+    o.textContent = T.halleyOpt(y, m, dd);
     sel.appendChild(o);
   }
   sel.addEventListener('change', () => {
@@ -1484,7 +1571,7 @@ $('bZenith').onclick = () => { state.alt = 90; draw(); };
   const sel = $('cometSel');
   COMETS.forEach((c, idx) => {
     const o = document.createElement('option');
-    o.value = idx; o.textContent = c[1];
+    o.value = idx; o.textContent = cname(c);
     sel.appendChild(o);
   });
   sel.addEventListener('change', () => {
@@ -1500,7 +1587,7 @@ $('bZenith').onclick = () => { state.alt = 90; draw(); };
   const sel = $('snSel');
   SNE.forEach((sn, idx) => {
     const o = document.createElement('option');
-    o.value = idx; o.textContent = sn[0];
+    o.value = idx; o.textContent = snName(sn[0]);
     sel.appendChild(o);
   });
   sel.addEventListener('change', () => {
@@ -1534,8 +1621,9 @@ $('bZenith').onclick = () => { state.alt = 90; draw(); };
       [ra, dec] = applyPrec(precessMatrix(state.jd), sn[4], sn[5]);
     }
     centerOn(ra, dec); draw();
-    $('snMeta').textContent = `観測地：${best.name}（南中高度 ${best.alt.toFixed(0)}°）`;
-    $('snInfo').textContent = SNDESC[i].join('\n');
+    snShown = i; snBest = { name: best.name, alt: best.alt };
+    $('snMeta').textContent = T.snMeta(tn(best.name), best.alt.toFixed(0));
+    $('snInfo').textContent = (LANG === 'en' ? SNDESC_EN[i] : SNDESC[i]).join('\n');
     $('snBox').style.display = 'block';
     sel.value = '';
   });
@@ -1606,6 +1694,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 loadData();
+try { applyLang(localStorage.getItem('skyLang') || 'ja'); } catch(e) { applyLang('ja'); }
 $('lat').value = state.lat; $('lon').value = state.lon;
 $('fov').value = state.fov; $('fovVal').textContent = state.fov + '°';
 jdToFields();
