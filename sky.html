@@ -90,9 +90,14 @@
   /* PC版のブラウザ内全画面：タイトル段は残し、操作部を隠して空を窓いっぱいにする（fina 指定 2026-11-27） */
   #wrap.m-fullpc { height: 100dvh; display: flex; flex-direction: column; max-width: none; padding: 0; }
   body:has(#wrap.m-fullpc) { margin: 0; }
-  #wrap.m-fullpc > *:not(h1):not(#sky):not(#gl):not(#top):not(#bBack):not(#fsBar):not(#fsInfo) { display: none !important; }
+  #wrap.m-fullpc > *:not(h1):not(#sky):not(#gl):not(#top):not(#bBack):not(#fsBar):not(#fsInfo):not(#fsBarPc) { display: none !important; }
   #wrap.m-fullpc #sky { flex: 1 1 auto; min-height: 0; height: auto; width: 100%; aspect-ratio: auto; max-height: none; border: none; border-radius: 0; }
-  #wrap.m-fullpc #bBack { display: block; }
+  /* 全画面下部の操作バー（スライダー3つ）と、右下の日付・時間・場所（fina 要望 2026-11-27） */
+  #fsBarPc { display: none; }
+  #wrap.m-fullpc #fsBarPc { display: flex; align-items: center; gap: 10px; position: fixed; left: 12px; bottom: 12px; z-index: 20; background: rgba(16,24,48,0.85); padding: 8px 12px; border-radius: 10px; color: #dfe8ff; font-size: 13px; }
+  #wrap.m-fullpc #fsBarPc input[type="range"] { width: 110px; }
+  #wrap.m-fullpc #fsBarPc button { padding: 6px 10px; font-size: 13px; }
+  #wrap.m-fullpc #fsInfo { display: block; position: fixed; right: 12px; bottom: 12px; left: auto; z-index: 20; background: rgba(16,24,48,0.85); padding: 6px 12px; border-radius: 10px; color: #dfe8ff; font-size: 14.5px; }
   #wrap.m-hd #cityname, #wrap.m-4k #cityname { color: #b26a00 !important; }
   #wrap.m-hd #nearby, #wrap.m-4k #nearby { color: #333333 !important; }
   #wrap.m-hd #snMeta, #wrap.m-4k #snMeta { color: #555555 !important; }
@@ -107,6 +112,7 @@
   <button id="bBack">戻る</button>
   <div id="fsBar"><button id="bFsPlay">▶</button><label>速度</label><input type="range" id="spdFs" min="1" max="4.5" step="0.5" value="1"><span id="spdFsVal">×1.0</span><button id="bShot">撮影</button></div>
   <div id="fsInfo"></div>
+  <div id="fsBarPc"><button id="bPcPlay">▶</button><label>速度</label><input type="range" id="spdPc" min="1" max="4.5" step="0.5" value="1"><span id="spdPcVal">×1.0</span><label>視野</label><input type="range" id="fovPc" min="25" max="120" step="1"><span id="fovPcVal"></span><label>等級</label><input type="range" id="magPc" min="1" max="8" step="0.5" value="8"><span id="magPcVal">〜8等</span></div>
   <div class="row">
     <label>日時</label>
     <select id="era"><option value="ad">西暦</option><option value="bc">紀元前</option></select>
@@ -1290,10 +1296,12 @@ function setPlay(on){
   $('wrap').classList.toggle('glplay', !!playTimer && glOK);
   $('bPlay').textContent = playTimer ? '⏸ 止める' : '▶ タイムプラス';
   $('bFsPlay').textContent = playTimer ? '⏸' : '▶';
+  $('bPcPlay').textContent = playTimer ? '⏸' : '▶';
   if (!on) draw(); // 止めたら重ねキャンバスが隠れるので、通常描画で描き直す
 }
 $('bPlay').onclick = () => setPlay(!playTimer);
 $('bFsPlay').onclick = () => setPlay(!playTimer);
+$('bPcPlay').onclick = () => setPlay(!playTimer);
 $('bShot').onclick = () => {
   const bc = $('era').value === 'bc';
   const name = `sky-${bc ? 'BC' : ''}${$('yr').value}-${String($('mo').value).padStart(2, '0')}-${String($('dy').value).padStart(2, '0')}.png`;
@@ -1328,12 +1336,17 @@ $('bShot').onclick = () => {
 };
 function setSpeed(v){
   state.speed = v;
-  $('spd').value = v; $('spdFs').value = v;
+  $('spd').value = v; $('spdFs').value = v; $('spdPc').value = v;
   $('spdVal').textContent = '×' + v.toFixed(1);
   $('spdFsVal').textContent = '×' + v.toFixed(1);
+  $('spdPcVal').textContent = '×' + v.toFixed(1);
 }
 $('spd').oninput = e => setSpeed(parseFloat(e.target.value));
 $('spdFs').oninput = e => setSpeed(parseFloat(e.target.value));
+$('spdPc').oninput = e => setSpeed(parseFloat(e.target.value));
+// PC全画面バーの視野・等級スライダー：本体側のスライダーと同じ状態を共有する
+$('fovPc').addEventListener('input', e => { state.fov = +e.target.value; $('fov').value = state.fov; $('fovVal').textContent = state.fov + '°'; $('fovPcVal').textContent = state.fov + '°'; draw(); });
+$('magPc').oninput = e => { $('magSel').value = e.target.value; $('magPcVal').textContent = '〜' + e.target.value + '等'; updateMagLabel(); draw(); };
 $('lat').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)){ state.lat = Math.max(-89, Math.min(89, v)); syncPlaceSelects(); draw(); } });
 $('lon').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)){ state.lon = Math.max(-180, Math.min(180, v)); syncPlaceSelects(); draw(); } });
 function fillPlaces(gi){
@@ -1426,6 +1439,11 @@ $('bHelp').onclick = () => { $('note').classList.toggle('open'); resize(); };
 $('bFs').onclick = () => {
   const on = $('wrap').classList.toggle('m-fullpc');
   $('bFs').textContent = on ? '戻す' : '全画面';
+  if (on){ // 入る時に全画面バーのスライダーを現在の値へ同期する
+    $('fovPc').value = state.fov; $('fovPcVal').textContent = state.fov + '°';
+    $('magPc').value = $('magSel').value; $('magPcVal').textContent = '〜' + $('magSel').value + '等';
+    setSpeed(state.speed);
+  }
   resize();
 };
 document.addEventListener('keydown', e => {
