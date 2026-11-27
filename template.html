@@ -87,6 +87,8 @@
   #wrap.m-hd #readout, #wrap.m-4k #readout { color: #222222; }
   #wrap.m-hd #note, #wrap.m-4k #note { color: #555555; }
   #wrap.m-hd #sky, #wrap.m-4k #sky { border-color: #98a4bd; }
+  /* PC版のブラウザ内全画面では、HD/4K の高さ制限とアスペクト比を外し、空を窓いっぱいにする */
+  #wrap.m-full #sky { max-height: none; aspect-ratio: auto; }
   #wrap.m-hd #cityname, #wrap.m-4k #cityname { color: #b26a00 !important; }
   #wrap.m-hd #nearby, #wrap.m-4k #nearby { color: #333333 !important; }
   #wrap.m-hd #snMeta, #wrap.m-4k #snMeta { color: #555555 !important; }
@@ -1402,7 +1404,7 @@ function setMode(m){
   $('bModeMobile').style.display = m === 'mobile' ? 'none' : '';
   $('bModeHD').style.display = m === 'mobile' ? 'none' : '';
   $('bMode4K').style.display = m === 'mobile' ? 'none' : '';
-  $('bFs').style.display = (m === 'mobile' || !window.__fsOK) ? 'none' : '';
+  $('bFs').style.display = m === 'mobile' ? 'none' : '';
   $('bModeHD').classList.toggle('on', m === 'hd');
   $('bMode4K').classList.toggle('on', m === '4k');
   updateMagLabel();
@@ -1413,15 +1415,10 @@ $('bModeMobile').onclick = () => setMode('mobile');
 $('bModeHD').onclick = () => setMode('hd');
 $('bMode4K').onclick = () => setMode('4k');
 $('bHelp').onclick = () => { $('note').classList.toggle('open'); resize(); };
-// ブラウザ全画面（PC版のみ、fina 要望 2026-11-27）：タイトル段のボタンで入り、もう一度押すか Esc で戻る
-window.__fsOK = !!document.documentElement.requestFullscreen;
-$('bFs').onclick = () => {
-  if (document.fullscreenElement) document.exitFullscreen();
-  else document.documentElement.requestFullscreen();
-};
-document.addEventListener('fullscreenchange', () => {
-  $('bFs').textContent = document.fullscreenElement ? '戻す' : '全画面';
-  resize();
+// ブラウザ内全画面（PC版のみ、fina 要望 2026-11-27）：ブラウザの窓の中で星空だけにする（スマホ版の m-full と同じ機構）。戻るボタンか Esc で復帰
+$('bFs').onclick = () => { $('wrap').classList.add('m-full'); resize(); };
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('wrap').classList.contains('m-full')){ $('wrap').classList.remove('m-full'); resize(); }
 });
 $('bFull').onclick = () => { $('wrap').classList.add('m-full'); resize(); };
 $('bBack').onclick = () => { $('wrap').classList.remove('m-full'); resize(); };
