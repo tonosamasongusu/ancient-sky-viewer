@@ -113,7 +113,7 @@
   #wrap.m-hd #fovVal, #wrap.m-4k #fovVal { color: #333333 !important; }
 </style>
 <div id="wrap" class="m-mobile">
-  <h1><span id="ttl" data-i18n="ttl">古代文献の再現も出来る夜空ビューア</span><span id="appVer">V42</span><span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC" data-i18n="modePC">PC版</button><button id="bModeMobile" style="display:none" data-i18n="modeMobile">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bLang">EN</button> <button id="bHelp" data-i18n="help">ヘルプ</button></span></h1>
+  <h1><span id="ttl" data-i18n="ttl">古代文献の再現も出来る夜空ビューア</span><span id="appVer">V43</span><span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC" data-i18n="modePC">PC版</button><button id="bModeMobile" style="display:none" data-i18n="modeMobile">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bLang">EN</button> <button id="bHelp" data-i18n="help">ヘルプ</button></span></h1>
   <canvas id="sky"></canvas>
   <canvas id="gl"></canvas>
   <canvas id="top"></canvas>
@@ -1148,7 +1148,7 @@ function draw(){
     // 2026-11-28 v38）：星の等級スライダーとは連動させない。帯を淡く置くことで、
     // 主役である星の強調が光る。テクスチャ未読込の間はグラデーション（輪郭層）を同じ薄さで出す。
     // v32〜v34 の等級同期曲線 (等級/8)^0.9 は、この指示で役目を終えた。
-    const MW_A = 0.5;
+    const MW_A = 0.6;
     ensureMWTexture();
     // 天の川：星と同じキャッシュ済みベクトルで変換する（毎フレームの歳差＋地平変換の三角関数をやめる）
     const jdKm = Math.round(state.jd*2)/2;
@@ -1792,7 +1792,7 @@ function updateMagLabel(){
   const capped = $('wrap').classList.contains('m-mobile') && v > MOB_MAG_CAP;
   $('magVal').textContent = capped ? T.magCapped : T.magText($('magSel').value);
 }
-$('magSel').oninput = () => { updateMagLabel(); drawSoon(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw;
+$('magSel').oninput = () => { updateMagLabel(); drawSoon(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw; $('cMW').onchange = draw;
 // スマホ版の等級範囲は 3.5〜7.6 等（表示上限 7.59、fina 指示 2026-11-28）：3.5 未満は星がほぼ無く、要らない。
 // PC 版は 1〜8 等のまま。モードに応じてスライダーの下限を切り替える。
 function applyMagFloor(){
