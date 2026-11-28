@@ -113,7 +113,7 @@
   #wrap.m-hd #fovVal, #wrap.m-4k #fovVal { color: #333333 !important; }
 </style>
 <div id="wrap" class="m-mobile">
-  <h1><span id="ttl" data-i18n="ttl">古代文献の再現も出来る夜空ビューア</span><span id="appVer">V40</span><span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC" data-i18n="modePC">PC版</button><button id="bModeMobile" style="display:none" data-i18n="modeMobile">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bLang">EN</button> <button id="bHelp" data-i18n="help">ヘルプ</button></span></h1>
+  <h1><span id="ttl" data-i18n="ttl">古代文献の再現も出来る夜空ビューア</span><span id="appVer">V42</span><span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC" data-i18n="modePC">PC版</button><button id="bModeMobile" style="display:none" data-i18n="modeMobile">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bLang">EN</button> <button id="bHelp" data-i18n="help">ヘルプ</button></span></h1>
   <canvas id="sky"></canvas>
   <canvas id="gl"></canvas>
   <canvas id="top"></canvas>
@@ -335,7 +335,7 @@ function renderGL(){
   gl.uniform1f(glLoc.H, H);
   gl.uniform1f(glLoc.cosLim, Math.cos(2*Math.atan((Math.hypot(W/2, H/2)/sPx)/2)) - 0.02);
   const magLim = $('wrap').classList.contains('m-mobile')
-    ? Math.min(parseFloat($('magSel').value), 6.9)
+    ? Math.min(parseFloat($('magSel').value), MOB_MAG_CAP)
     : parseFloat($('magSel').value);
   gl.uniform1f(glLoc.magLim, magLim);
   gl.drawArrays(gl.POINTS, 0, stars.length);
@@ -388,6 +388,7 @@ function buildMWLane(){
 let mwOff = null, mwSoft = null, mwTiny = null; // 諧調化用オフスクリーン（ピラミッドぼかし、テクスチャ未読込時の代替表示用）
 let mwTexImg = null, mwTexLoading = false, mwTexBaked = null; // 写真テクスチャ（色のグラデーション層）
 let mwPhotoC = null, mwPhotoH = null; // ブロックメッシュ描画用オフスクリーン
+const MOB_MAG_CAP = 7.59; // スマホ版の星の表示上限（fina 指示 2026-11-28：6.9等＝13,910星の2倍、27,820星になる上限値）
 function ensureMWTexture(){
   if (mwTexImg || mwTexLoading) return;
   mwTexLoading = true;
@@ -842,7 +843,7 @@ const LT = {
   ja: {
     fsBtn: '全画面', fsBack: '戻す', playGo: '▶ タイムプラス', playStop: '⏸ 止める',
     provisional: '（仮）', placePh: '場所…', noPlaces: '登録地点なし（約300km圏内）', sep: '、',
-    km: km => ` 約${km}km`, magText: v => `〜${v}等`, magCapped: '〜6.9等（スマホ上限）',
+    km: km => ` 約${km}km`, magText: v => `〜${v}等`, magCapped: '〜7.6等（スマホ上限）',
     dirs16: ['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西'],
     dirs8: [['北',0],['北東',45],['東',90],['南東',135],['南',180],['南西',225],['西',270],['北西',315]],
     readout: (az, dir, alt, lat, lon) => `視線の中心：方位 ${az}°（${dir}）・高度 ${alt}°　／　場所：緯度 ${lat}・経度 ${lon}　`,
@@ -859,7 +860,7 @@ const LT = {
   en: {
     fsBtn: 'Fullscreen', fsBack: 'Back', playGo: '▶ Time Plus', playStop: '⏸ Stop',
     provisional: ' (prov.)', placePh: 'Place…', noPlaces: 'No registered places within ~300 km', sep: ', ',
-    km: km => ` ~${km} km`, magText: v => `to mag ${v}`, magCapped: 'to mag 6.9 (mobile cap)',
+    km: km => ` ~${km} km`, magText: v => `to mag ${v}`, magCapped: 'to mag 7.6 (mobile cap)',
     dirs16: ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'],
     dirs8: [['N',0],['NE',45],['E',90],['SE',135],['S',180],['SW',225],['W',270],['NW',315]],
     readout: (az, dir, alt, lat, lon) => `Center: azimuth ${az}° (${dir}), altitude ${alt}°  /  Place: latitude ${lat}, longitude ${lon}  `,
@@ -1217,6 +1218,9 @@ function draw(){
     if (mwPhotoH.width !== sw2 || mwPhotoH.height !== sh2){ mwPhotoH.width = sw2; mwPhotoH.height = sh2; }
     const tw2 = Math.max(2, Math.round(W*QT)), th2 = Math.max(2, Math.round(H*QT));
     if (mwTiny.width !== tw2 || mwTiny.height !== th2){ mwTiny.width = tw2; mwTiny.height = th2; }
+    // v42（fina 指示 2026-11-28）：テクスチャ読込後は予備グラデーションを描かない（毎フレームの無駄を停止）。
+    // テクスチャ未読込の間だけ、従来どおりグラデーションを描いて代替表示する。
+    if (!mwTexImg){
     const oc = mwOff.getContext('2d');
     oc.setTransform(1, 0, 0, 1, 0, 0);
     oc.clearRect(0, 0, mwOff.width, mwOff.height);
@@ -1343,6 +1347,7 @@ function draw(){
     sc.imageSmoothingEnabled = true;
     sc.clearRect(0, 0, mwSoft.width, mwSoft.height);
     sc.drawImage(mwTiny, 0, 0, mwSoft.width, mwSoft.height);
+    }
     // 最終合成（v38）：写真テクスチャをブロックメッシュで貼り、0.25 へ落として全寸へ戻す
     // 一段ぼかしでブロックの継ぎ目を溶かし、固定の薄さ MW_A で重ねる。
     // テクスチャ未読込の間はグラデーション（mwSoft）を同じ薄さで出す。
@@ -1381,9 +1386,9 @@ function draw(){
     }
   }
   // 星：歳差と地平変換はキャッシュし、毎フレームは視野内の星だけを投影する（4.1万星対応）
-  // スマホ版は重いので表示上限を6.9等（14,9xx星＝15,000以下）に落とす（fina 指示 2026-11-24）
+  // スマホ版は表示上限を MOB_MAG_CAP 等に制限（v42：7.59等＝27,820星、6.9等＝13,910星の2倍。fina 指示 2026-11-28）
   const magLim = $('wrap').classList.contains('m-mobile')
-    ? Math.min(parseFloat($('magSel').value), 6.9)
+    ? Math.min(parseFloat($('magSel').value), MOB_MAG_CAP)
     : parseFloat($('magSel').value);
   const showNames = $('cNames').checked;
   // タイムプラス中は星を GPU（WebGL）で描く（fina 指示 2026-11-24）。天体・星名は上の 2D 層へ
@@ -1784,17 +1789,22 @@ $('fov').addEventListener('input', e => { state.fov = +e.target.value; $('fovVal
 $('cLines').onchange = draw;
 function updateMagLabel(){
   const v = parseFloat($('magSel').value);
-  const capped = $('wrap').classList.contains('m-mobile') && v > 6.9;
+  const capped = $('wrap').classList.contains('m-mobile') && v > MOB_MAG_CAP;
   $('magVal').textContent = capped ? T.magCapped : T.magText($('magSel').value);
 }
 $('magSel').oninput = () => { updateMagLabel(); drawSoon(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw;
-// スマホ版の等級範囲は 3.5〜6.9 等（fina 指示 2026-11-28）：3.5 未満は星がほぼ無く、要らない。
+// スマホ版の等級範囲は 3.5〜7.6 等（表示上限 7.59、fina 指示 2026-11-28）：3.5 未満は星がほぼ無く、要らない。
 // PC 版は 1〜8 等のまま。モードに応じてスライダーの下限を切り替える。
 function applyMagFloor(){
-  const ms = $('magSel');
+  // 等級の下限はモード別（fina 指示 2026-11-28）：スマホ版 3.5、PC 版 3。星の表示上限は別（スマホ 6.9 は描画側で制限）。
+  // 全画面バーの等級スライダ（magPc）にも同じ下限を効かせる（同じ値の別の操作面なので）。
   const mob = $('wrap').classList.contains('m-mobile');
-  ms.min = mob ? '3.5' : '1';
-  if (mob && parseFloat(ms.value) < 3.5) ms.value = '3.5';
+  const fl = mob ? 3.5 : 3;
+  for (const id of ['magSel', 'magPc']){
+    const ms = $(id);
+    ms.min = String(fl);
+    if (parseFloat(ms.value) < fl) ms.value = String(fl);
+  }
 }
 function setMode(m){
   const w = $('wrap');
