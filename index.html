@@ -111,9 +111,25 @@
   #wrap.m-hd #snMeta, #wrap.m-4k #snMeta { color: #555555 !important; }
   #wrap.m-hd #snInfo, #wrap.m-4k #snInfo { color: #7a4d00 !important; }
   #wrap.m-hd #fovVal, #wrap.m-4k #fovVal { color: #333333 !important; }
+  /* v44 レイアウト（fina 2026-11-28）：チェック類は右上に集約、スライダーは一列に集約、ボタンは大きめ */
+  .chkRow { justify-content: flex-end; margin-top: 2px; }
+  .chkRow .chk { font-size: 13.5px; }
+  .sliderRow .sGrp { white-space: nowrap; margin-right: 10px; }
+  .sliderRow input[type=range] { width: 130px; vertical-align: middle; }
+  #fovVal { font-size: 12px; color: #9fb0d0; }
+  #wrap.m-hd .row button, #wrap.m-4k .row button { padding: 9px 16px; font-size: 14.5px; }
+  #wrap.m-hd .modeBtns button, #wrap.m-4k .modeBtns button { padding: 7px 14px; font-size: 13.5px; }
+  #wrap.m-hd #bZenith, #wrap.m-hd #bFull, #wrap.m-4k #bZenith, #wrap.m-4k #bFull { padding: 11px 22px; font-size: 15px; font-weight: 600; }
+  #wrap.m-mobile .chkRow .chk { font-size: 12px; }
 </style>
 <div id="wrap" class="m-mobile">
-  <h1><span id="ttl" data-i18n="ttl">古代文献の再現も出来る夜空ビューア</span><span id="appVer">V43</span><span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC" data-i18n="modePC">PC版</button><button id="bModeMobile" style="display:none" data-i18n="modeMobile">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bLang">EN</button> <button id="bHelp" data-i18n="help">ヘルプ</button></span></h1>
+  <h1><span id="ttl" data-i18n="ttl">古代文献の再現も出来る夜空ビューア</span><span id="appVer">V44</span><span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC" data-i18n="modePC">PC版</button><button id="bModeMobile" style="display:none" data-i18n="modeMobile">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bLang">EN</button> <button id="bHelp" data-i18n="help">ヘルプ</button></span></h1>
+  <div class="row chkRow">
+    <label class="chk"><input type="checkbox" id="cLines" checked> <span data-i18n="cLines">星座線</span></label>
+    <label class="chk"><input type="checkbox" id="cMW" checked> <span data-i18n="cMW">天の川</span></label>
+    <label class="chk"><input type="checkbox" id="cNames" checked> <span data-i18n="cNames">星の名前</span></label>
+    <label class="chk"><input type="checkbox" id="cPlanets" checked> <span data-i18n="cPlanets">惑星・月・太陽</span></label>
+  </div>
   <canvas id="sky"></canvas>
   <canvas id="gl"></canvas>
   <canvas id="top"></canvas>
@@ -137,7 +153,6 @@
     <button id="bP1h" data-i18n="p1h">＋1時間</button>
     <button id="bM10" data-i18n="m10">−10分</button>
     <button id="bP10" data-i18n="p10">＋10分</button>
-    <label><span data-i18n="speed">速度</span> <input type="range" id="spd" min="1" max="4.5" step="0.5" value="1" style="width:110px;vertical-align:middle"> <span id="spdVal">×1.0</span></label>
   </div>
   <div class="row">
     <label data-i18n="lat">緯度</label><input type="number" id="lat" step="0.1" min="-89" max="89">
@@ -166,14 +181,12 @@
     <div id="snMeta" style="font-size:12.5px;color:#9fb0d0"></div>
     <div id="snInfo" style="white-space:pre-line;font-size:14px;line-height:1.5;color:#ffe9a8"></div>
   </div>
+  <div class="row sliderRow">
+    <span class="sGrp"><label data-i18n="speed">速度</label> <input type="range" id="spd" min="1" max="4.5" step="0.5" value="1"> <span id="spdVal">×1.0</span></span>
+    <span class="sGrp"><label data-i18n="fov">視野</label> <input type="range" id="fov" min="25" max="120" step="1"> <span id="fovVal"></span></span>
+    <span class="sGrp"><label data-i18n="magLimit">星の等級</label> <input type="range" id="magSel" min="1" max="8" step="0.5" value="8"> <span id="magVal">〜8等</span></span>
+  </div>
   <div class="row">
-    <label data-i18n="fov">視野</label><input type="range" id="fov" min="25" max="120" step="1">
-    <span id="fovVal" style="font-size:12px;color:#9fb0d0"></span>
-    <label class="chk"><input type="checkbox" id="cLines" checked> <span data-i18n="cLines">星座線</span></label>
-    <label class="chk"><input type="checkbox" id="cMW" checked> <span data-i18n="cMW">天の川</span></label>
-    <label class="chk"><span data-i18n="magLimit">星の等級</span> <input type="range" id="magSel" min="1" max="8" step="0.5" value="8" style="width:110px;vertical-align:middle"> <span id="magVal">〜8等</span></label>
-    <label class="chk"><input type="checkbox" id="cNames" checked> <span data-i18n="cNames">星の名前</span></label>
-    <label class="chk"><input type="checkbox" id="cPlanets" checked> <span data-i18n="cPlanets">惑星・月・太陽</span></label>
     <button id="bZenith" data-i18n="zenith">天頂を見る</button>
     <button id="bFull" data-i18n="fullSky">星空を全画面</button>
   </div>
