@@ -21,6 +21,8 @@
   input, select, button { background: #101830; color: #e8eeff; border: 1px solid #33436e; border-radius: 6px; padding: 6px 8px; font-size: 13px; }
   button { cursor: pointer; }
   button:hover { background: #1a2650; }
+  /* タイムプラスはハレー彗星の行の右の空きスペースに大きく置く（fina 指示 2026-11-28：時刻列に埋もれて存在に気づかない人がいるため） */
+  #bPlay { margin-left: 16px; padding: 9px 22px; font-size: 14.5px; font-weight: 600; }
   input[type="number"] { width: 76px; }
   #yr { width: 92px; }
   input[type="range"] { width: 130px; padding: 0; }
@@ -40,6 +42,9 @@
   #wrap.m-mobile .row { flex: 0 0 auto; margin-top: 5px; gap: 4px; }
   #wrap.m-mobile .row label { font-size: 11px; }
   #wrap.m-mobile input, #wrap.m-mobile select, #wrap.m-mobile button { padding: 4px 6px; font-size: 12px; }
+  /* スマホ版のタイムプラスは大きく橙色に（fina 指示 2026-11-28） */
+  #wrap.m-mobile #bPlay { margin-left: 6px; padding: 12px 26px; font-size: 16px; font-weight: 700; background: #f59e0b; border-color: #b45309; color: #241300; }
+  #wrap.m-mobile #bPlay:hover { background: #fbbf24; }
   #wrap.m-mobile input[type="number"] { width: 60px; }
   #wrap.m-mobile #yr { width: 74px; }
   #wrap.m-mobile input[type="range"] { width: 100px; }
@@ -131,7 +136,6 @@
     <button id="bP1h" data-i18n="p1h">＋1時間</button>
     <button id="bM10" data-i18n="m10">−10分</button>
     <button id="bP10" data-i18n="p10">＋10分</button>
-    <button id="bPlay">▶ タイムプラス</button>
     <label><span data-i18n="speed">速度</span> <input type="range" id="spd" min="1" max="4.5" step="0.5" value="1" style="width:110px;vertical-align:middle"> <span id="spdVal">×1.0</span></label>
   </div>
   <div class="row">
@@ -147,6 +151,7 @@
   <div class="row">
     <label data-i18n="halley">ハレー彗星</label>
     <select id="halleySel"><option value="" data-i18n="halleyPh">（日付に連動：近日点の前後で自動表示）</option></select>
+    <button id="bPlay">▶ タイムプラス</button>
   </div>
   <div class="row">
     <label data-i18n="comets">主要な彗星</label>
