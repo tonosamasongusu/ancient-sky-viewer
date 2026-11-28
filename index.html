@@ -360,6 +360,27 @@ function buildMWVec(){
   mwEqCache = { key: null, v: null }; mwHorCache = { key: null, v: null };
 }
 
+// ---------- 天の川の諧調表現（C–D 形式, fina 指示 2026-11-28） ----------
+// 銀河座標 (l, b) -> J2000 赤道座標 [ra, dec]（暗い筋と色づけの位置決め用）。
+// 赤道->銀河の回転行列（J2000）の転置で戻す。
+function galToEq(lDeg, bDeg){
+  const l = lDeg*D2R, b = bDeg*D2R, cb = Math.cos(b);
+  const gx = cb*Math.cos(l), gy = cb*Math.sin(l), gz = Math.sin(b);
+  const x = -0.0548755604*gx + 0.4941094279*gy - 0.8676661490*gz;
+  const y = -0.8734370902*gx - 0.4448296300*gy - 0.1980763734*gz;
+  const z = -0.4838350155*gx + 0.7469822445*gy + 0.4559837762*gz;
+  return [rev(Math.atan2(y, x)*R2D), Math.asin(Math.max(-1, Math.min(1, z)))*R2D];
+}
+let mwLane = null; // 大暗斑（グレートリフト）の中心線 [ra, dec] (J2000)
+function buildMWLane(){
+  mwLane = [];
+  for (let l = -8; l <= 104; l += 4){
+    const b = 1.6 + 1.3*Math.sin((l + 8)/112*Math.PI);
+    mwLane.push(galToEq(l < 0 ? l + 360 : l, b));
+  }
+}
+let mwOff = null, mwSoft = null, mwTiny = null; // 諧調化用オフスクリーン（3段ピラミッド）
+
 // ---------- 暦 <-> ユリウス日（1582年を境にユリウス暦/グレゴリオ暦） ----------
 function calToJD(y, m, d){ // その日の 0時 (UT) の JD
   let yy = y, mm = m;
@@ -1023,6 +1044,13 @@ function draw(){
     ctx.fillStyle = '#8fb0ff'; ctx.fillText(t, p[0], p[1]);
   });
   if ($('cMW').checked && mwLayers){
+    // 天の川の明るさは星の等級スライダーと同期させる（fina 指示 2026-11-28）：
+    // 最大表示（8等）で写真表現（抑えた照度）がフルに出て、星を落とすと帯も淡くなる。
+    const mwMagLim = $('wrap').classList.contains('m-mobile')
+      ? Math.min(parseFloat($('magSel').value), 6.9)
+      : parseFloat($('magSel').value);
+    const mwT = Math.max(0, Math.min(1, (mwMagLim - 1)/7));
+    const mwS = Math.pow(mwT, 1.3); // 帯の強さ 0（1等）→ 1（8等）
     // 天の川：星と同じキャッシュ済みベクトルで変換する（毎フレームの歳差＋地平変換の三角関数をやめる）
     const jdKm = Math.round(state.jd*2)/2;
     if (!mwEqCache.v || mwEqCache.key !== jdKm){
@@ -1052,6 +1080,14 @@ function draw(){
       mwHorCache = { key: hKeyM, v };
     }
     const hvM = mwHorCache.v;
+    const pxDeg = (H/2) / (2*Math.tan(state.fov*D2R/4)) * D2R; // 1度あたりの px 数
+    const projPt = idx => {
+      const e = hvM[idx*3], nn = hvM[idx*3+1], uu = hvM[idx*3+2];
+      if (uu < -0.0349) return null;
+      const az = rev(Math.atan2(e, nn)*R2D), al = Math.asin(Math.max(-1, Math.min(1, uu)))*R2D;
+      if (al < -2) return null;
+      return project(az, al);
+    };
     // 背景レイヤー化（fina 要望 2026-11-24）：最も明るい層の輪郭を太く薄くなぞり、柔らかい光暈を下に敷く
     {
       const bright = mwLayers[mwLayers.length - 1];
@@ -1059,37 +1095,142 @@ function draw(){
       for (const ring of bright){
         let pen = false;
         for (const idx of ring){
-          const e = hvM[idx*3], nn = hvM[idx*3+1], uu = hvM[idx*3+2];
-          if (uu < -0.0349){ pen = false; continue; }
-          const az = rev(Math.atan2(e, nn)*R2D), al = Math.asin(Math.max(-1, Math.min(1, uu)))*R2D;
-          if (al < -2){ pen = false; continue; }
-          const p = project(az, al); if (!p){ pen = false; continue; }
+          const p = projPt(idx);
+          if (!p){ pen = false; continue; }
           if (!pen){ ctx.moveTo(p[0], p[1]); pen = true; } else ctx.lineTo(p[0], p[1]);
         }
         ctx.closePath();
       }
-      ctx.strokeStyle = 'rgba(165,190,245,0.055)';
+      ctx.strokeStyle = 'rgba(165,190,245,' + (0.055*mwS) + ')';
       ctx.lineWidth = 15; ctx.lineJoin = 'round';
       ctx.stroke();
     }
-    const alphas = [0.08, 0.11, 0.14, 0.18, 0.24];
+    // 諧調バンド（C–D 形式, fina 指示 2026-11-28）：輪郭層をオフスクリーンに描き、
+    // 縮小→拡大でぼかして段差のない諧調にする。色づけ・雲むら（D の要素は控えめ）と
+    // 暗い筋（C の要素）も同じオフスクリーンに入れてから合成する。
+    if (!mwOff){ mwOff = document.createElement('canvas'); mwSoft = document.createElement('canvas'); mwTiny = document.createElement('canvas'); }
+    const QS = 0.5, QR = 0.25, QT = 0.125;
+    const ow = Math.max(2, Math.round(W*QS)), oh = Math.max(2, Math.round(H*QS));
+    if (mwOff.width !== ow || mwOff.height !== oh){ mwOff.width = ow; mwOff.height = oh; }
+    const sw2 = Math.max(2, Math.round(W*QR)), sh2 = Math.max(2, Math.round(H*QR));
+    if (mwSoft.width !== sw2 || mwSoft.height !== sh2){ mwSoft.width = sw2; mwSoft.height = sh2; }
+    const tw2 = Math.max(2, Math.round(W*QT)), th2 = Math.max(2, Math.round(H*QT));
+    if (mwTiny.width !== tw2 || mwTiny.height !== th2){ mwTiny.width = tw2; mwTiny.height = th2; }
+    const oc = mwOff.getContext('2d');
+    oc.setTransform(1, 0, 0, 1, 0, 0);
+    oc.clearRect(0, 0, mwOff.width, mwOff.height);
+    oc.setTransform(QS, 0, 0, QS, 0, 0);
+    const layerCol = [
+      [150, 175, 235, 0.10], [165, 188, 240, 0.13], [182, 198, 242, 0.16],
+      [205, 205, 225, 0.21], [228, 216, 198, 0.27]
+    ];
     mwLayers.forEach((rings, li) => {
-      ctx.beginPath();
+      const c = layerCol[li] || layerCol[layerCol.length - 1];
+      oc.beginPath();
       for (const ring of rings){
         let pen = false;
         for (const idx of ring){
-          const e = hvM[idx*3], nn = hvM[idx*3+1], uu = hvM[idx*3+2];
-          if (uu < -0.0349){ pen = false; continue; }
-          const az = rev(Math.atan2(e, nn)*R2D), al = Math.asin(Math.max(-1, Math.min(1, uu)))*R2D;
-          if (al < -2){ pen = false; continue; }
-          const p = project(az, al); if (!p){ pen = false; continue; }
-          if (!pen){ ctx.moveTo(p[0], p[1]); pen = true; } else ctx.lineTo(p[0], p[1]);
+          const p = projPt(idx);
+          if (!p){ pen = false; continue; }
+          if (!pen){ oc.moveTo(p[0], p[1]); pen = true; } else oc.lineTo(p[0], p[1]);
         }
-        ctx.closePath();
+        oc.closePath();
       }
-      ctx.fillStyle = 'rgba(175,195,240,' + (alphas[li] || 0.05) + ')';
-      ctx.fill('evenodd');
+      oc.fillStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + c[3] + ')';
+      oc.fill('evenodd');
     });
+    // 色づけ：銀河中心の暖色とはくちょう座付近の淡いピンク
+    const tintAt = (l, b, deg, colA) => {
+      const [ra0, dec0] = galToEq(l, b);
+      const [ra, dec] = applyPrec(P, ra0, dec0);
+      const [az, al] = altaz(ra, dec, lst, state.lat);
+      if (al < -6) return;
+      const p = project(az, al); if (!p) return;
+      const r = Math.max(8, deg*pxDeg);
+      const gr = oc.createRadialGradient(p[0], p[1], 0, p[0], p[1], r);
+      gr.addColorStop(0, colA); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      oc.fillStyle = gr;
+      oc.fillRect(p[0] - r, p[1] - r, r*2, r*2);
+    };
+    tintAt(0, 0, 13, 'rgba(255,186,138,0.12)');
+    tintAt(84, -1, 5.5, 'rgba(255,148,158,0.055)');
+    // 雲むら：明るい層の輪郭頂点を決定的に間引き、柔らかい光の塊を置く
+    const blobFrom = (li, stride, mod, alpha, rMin, rVar) => {
+      const rings = mwLayers[li]; if (!rings) return;
+      for (const ring of rings){
+        for (let k = 0; k < ring.length; k += stride){
+          const idx = ring[k];
+          const h = (idx*2654435761) >>> 0;
+          if (h % mod) continue;
+          const p = projPt(idx); if (!p) continue;
+          const r = (rMin + (h % 100)/100*rVar)*pxDeg;
+          const gr = oc.createRadialGradient(p[0], p[1], 0, p[0], p[1], r);
+          gr.addColorStop(0, 'rgba(235,240,255,' + alpha + ')');
+          gr.addColorStop(1, 'rgba(235,240,255,0)');
+          oc.fillStyle = gr;
+          oc.fillRect(p[0] - r, p[1] - r, r*2, r*2);
+        }
+      }
+    };
+    blobFrom(mwLayers.length - 1, 3, 5, 0.05, 1.4, 1.6);
+    blobFrom(mwLayers.length - 2, 4, 7, 0.035, 2.0, 2.2);
+    // 暗い筋：大暗斑（グレートリフト）の中心線を、途切れと濃淡を持たせて重ねる
+    if (!mwLane) buildMWLane();
+    const lanePts = mwLane.map(([ra0, dec0]) => {
+      const [ra, dec] = applyPrec(P, ra0, dec0);
+      const [az, al] = altaz(ra, dec, lst, state.lat);
+      if (al < -2) return null;
+      return project(az, al);
+    });
+    oc.lineCap = 'round'; oc.lineJoin = 'round';
+    const lanePass = (wDeg, alpha) => {
+      for (let i = 0; i < lanePts.length - 1; i++){
+        const p = lanePts[i], q = lanePts[i + 1];
+        if (!p || !q) continue;
+        const h = ((i + 1)*2654435761) >>> 0;
+        if (h % 5 === 3) continue; // 途切れ
+        oc.beginPath(); oc.moveTo(p[0], p[1]); oc.lineTo(q[0], q[1]);
+        oc.strokeStyle = 'rgba(7,9,17,' + (alpha*(0.8 + (h % 40)/100)) + ')';
+        oc.lineWidth = Math.max(1.5, wDeg*pxDeg);
+        oc.stroke();
+      }
+    };
+    lanePass(5.2, 0.13); lanePass(3.2, 0.16); lanePass(1.9, 0.17);
+    // コールサック（みなみじゅうじ座付近の暗い塊）
+    {
+      const [ra0, dec0] = galToEq(300, -0.5);
+      const [ra, dec] = applyPrec(P, ra0, dec0);
+      const [az, al] = altaz(ra, dec, lst, state.lat);
+      if (al > -4){
+        const p = project(az, al);
+        if (p){
+          const r = Math.max(6, 3.4*pxDeg);
+          const gr = oc.createRadialGradient(p[0], p[1], 0, p[0], p[1], r);
+          gr.addColorStop(0, 'rgba(7,9,17,0.32)'); gr.addColorStop(1, 'rgba(7,9,17,0)');
+          oc.fillStyle = gr;
+          oc.fillRect(p[0] - r, p[1] - r, r*2, r*2);
+        }
+      }
+    }
+    // ぼかし合成：0.5 → 0.25 → 0.125 → 0.25 → 全寸のピラミッド往復で強くぼかし、
+    // 輪郭層の段差を諧調に溶かす（v31 の一段縮小では段差が残ったための強化, 2026-11-28）。
+    // 最終合成の不透明度は等級同期の強さ mwS（星を落とすと帯も淡くなる）。
+    const sc = mwSoft.getContext('2d');
+    sc.setTransform(1, 0, 0, 1, 0, 0);
+    sc.imageSmoothingEnabled = true;
+    sc.clearRect(0, 0, mwSoft.width, mwSoft.height);
+    sc.drawImage(mwOff, 0, 0, mwSoft.width, mwSoft.height);
+    const tc = mwTiny.getContext('2d');
+    tc.setTransform(1, 0, 0, 1, 0, 0);
+    tc.imageSmoothingEnabled = true;
+    tc.clearRect(0, 0, mwTiny.width, mwTiny.height);
+    tc.drawImage(mwSoft, 0, 0, mwTiny.width, mwTiny.height);
+    sc.clearRect(0, 0, mwSoft.width, mwSoft.height);
+    sc.drawImage(mwTiny, 0, 0, mwSoft.width, mwSoft.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = mwS;
+    ctx.drawImage(mwSoft, 0, 0, W, H);
+    ctx.globalAlpha = 1;
   }
   if ($('cLines').checked){
     ctx.strokeStyle = 'rgba(110,140,220,0.5)'; ctx.lineWidth = 1;
