@@ -1049,8 +1049,8 @@ function draw(){
     const mwMagLim = $('wrap').classList.contains('m-mobile')
       ? Math.min(parseFloat($('magSel').value), 6.9)
       : parseFloat($('magSel').value);
-    const mwT = Math.max(0, Math.min(1, (mwMagLim - 1)/7));
-    const mwS = Math.pow(mwT, 1.3); // 帯の強さ 0（1等）→ 1（8等）
+    const mwT = Math.max(0, Math.min(1, mwMagLim/7));
+    const mwS = Math.pow(mwT, 1.3); // 帯の強さ：応答を1段ずらし、最低等級（1等）でも消え切らず 0.08 ほど残る（fina 指示 2026-11-28）。7等以上でフル
     // 天の川：星と同じキャッシュ済みベクトルで変換する（毎フレームの歳差＋地平変換の三角関数をやめる）
     const jdKm = Math.round(state.jd*2)/2;
     if (!mwEqCache.v || mwEqCache.key !== jdKm){
