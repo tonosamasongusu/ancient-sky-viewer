@@ -1787,6 +1787,14 @@ function updateMagLabel(){
   $('magVal').textContent = capped ? T.magCapped : T.magText($('magSel').value);
 }
 $('magSel').oninput = () => { updateMagLabel(); drawSoon(); }; $('cNames').onchange = draw; $('cPlanets').onchange = draw;
+// スマホ版の等級範囲は 3.5〜6.9 等（fina 指示 2026-11-28）：3.5 未満は星がほぼ無く、要らない。
+// PC 版は 1〜8 等のまま。モードに応じてスライダーの下限を切り替える。
+function applyMagFloor(){
+  const ms = $('magSel');
+  const mob = $('wrap').classList.contains('m-mobile');
+  ms.min = mob ? '3.5' : '1';
+  if (mob && parseFloat(ms.value) < 3.5) ms.value = '3.5';
+}
 function setMode(m){
   const w = $('wrap');
   w.classList.remove('m-mobile', 'm-hd', 'm-4k', 'm-full', 'm-fullpc'); // モード切替時は全画面も必ず解除する（fina 報告 2026-11-24）
@@ -1799,6 +1807,7 @@ function setMode(m){
   $('bFs').style.display = m === 'mobile' ? 'none' : '';
   $('bModeHD').classList.toggle('on', m === 'hd');
   $('bMode4K').classList.toggle('on', m === '4k');
+  applyMagFloor();
   updateMagLabel();
   resize();
 }
@@ -1806,6 +1815,7 @@ $('bModePC').onclick = () => setMode('hd');
 $('bModeMobile').onclick = () => setMode('mobile');
 $('bModeHD').onclick = () => setMode('hd');
 $('bMode4K').onclick = () => setMode('4k');
+applyMagFloor(); // 起動時はスマホ版（m-mobile）が初期モードなので、下限を最初から効かせる
 $('bHelp').onclick = () => { $('note').classList.toggle('open'); resize(); };
 // ブラウザ内全画面（PC版のみ、fina 指定 2026-11-27）：タイトル段は残し、空を窓いっぱいにする。もう一度押すか、戻るボタンか Esc で復帰
 $('bFs').onclick = () => {
