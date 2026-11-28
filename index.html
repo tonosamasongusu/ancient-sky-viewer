@@ -38,6 +38,7 @@
   /* スマホ版（標準）：1画面に収まる縦レイアウト */
   #wrap.m-mobile { height: 100dvh; display: flex; flex-direction: column; padding: 6px; max-width: 520px; }
   #wrap.m-mobile h1 { font-size: 13px; margin: 0 0 4px; }
+  #appVer { font-size: .7em; font-weight: 600; opacity: .55; margin-left: 8px; letter-spacing: .03em; }
   #wrap.m-mobile #sky { flex: 1 1 auto; min-height: 130px; height: auto; aspect-ratio: auto; max-height: none; }
   #wrap.m-mobile .row { flex: 0 0 auto; margin-top: 5px; gap: 4px; }
   #wrap.m-mobile .row label { font-size: 11px; }
@@ -112,7 +113,7 @@
   #wrap.m-hd #fovVal, #wrap.m-4k #fovVal { color: #333333 !important; }
 </style>
 <div id="wrap" class="m-mobile">
-  <h1><span id="ttl" data-i18n="ttl">古代文献の再現も出来る夜空ビューア</span><span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC" data-i18n="modePC">PC版</button><button id="bModeMobile" style="display:none" data-i18n="modeMobile">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bLang">EN</button> <button id="bHelp" data-i18n="help">ヘルプ</button></span></h1>
+  <h1><span id="ttl" data-i18n="ttl">古代文献の再現も出来る夜空ビューア</span><span id="appVer">V40</span><span class="modeBtns" style="float:right"><button id="bFs" style="display:none">全画面</button><button id="bModePC" data-i18n="modePC">PC版</button><button id="bModeMobile" style="display:none" data-i18n="modeMobile">スマホ版</button><button id="bModeHD" style="display:none">HD</button><button id="bMode4K" style="display:none">4K</button> <button id="bLang">EN</button> <button id="bHelp" data-i18n="help">ヘルプ</button></span></h1>
   <canvas id="sky"></canvas>
   <canvas id="gl"></canvas>
   <canvas id="top"></canvas>
